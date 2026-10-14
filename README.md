@@ -3,9 +3,6 @@ Repo: github.com/bl4dereaper/MISHA · Focus: DSLR/mirrorless camera support + st
 
 
 ## System Overview
-
-### MISHA: low-cost multispectral imaging system developed at RIT, funded by NEH PR-268783-20 ("Low-Cost End-to-End Spectral Imaging System for Historical Document Discovery")
-Co-directed by Dr. David Messinger (RIT) and Dr. Juilee Decker (RIT)
 Purpose: enables scholars, curators, researchers with non-scientific backgrounds to analyze cultural heritage items (manuscripts, historical documents, etc.)
 Output: ENVI spectral image cubes
 Architecture
@@ -55,11 +52,3 @@ Frame-buffer refactor — factor _grab_raw_frame() / _frame_to_ndarray() pattern
 ### Open Questions
 LED channel mapping (led_id) co-located in rig config? — leaning yes (single source of truth)
 RigConfig authoring: real per-rig YAML files to be written for each system
-
-
-# MISHA Image Capturing Software
-MISHA Image Capturing Software is funded by the National Endowment for the Humanities, PR-268783-20, Preservation and Access: Research and Development, RIT, Low-Cost End-to-End Spectral Imaging System for Historical Document Discovery co-directed by Dr. David Messinger and Dr. Juilee Decker at Rochester Institute of Technology This software works together with the MISHA hardware to create multispectral image ENVI cubes. 
-### 
-## License
-[MIT](https://choosealicense.com/licenses/mit/)
-### 
