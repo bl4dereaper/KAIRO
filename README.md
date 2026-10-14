@@ -25,7 +25,7 @@ Baumer (baumer_controller.py)
 Mock controller for hardware-free testing (camera_mock.py)
 
 
-# Goals of this Repository
+# Project Kairo
 ### New Feature: Converted Camera Support
 Goal: full-spectrum converted bodies (Kolari-style) — Canon, Nikon, Fuji first
 Platform: Linux/macOS confirmed (Windows deferred)
