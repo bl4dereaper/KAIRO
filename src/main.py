@@ -1,14 +1,34 @@
+"""
+MISHA Image Capturing Software — Main Entry Point (Project Kairo)
+
+Cross-platform (macOS/Linux/Windows) launcher for the MISHA multispectral
+imaging GUI. Initializes the UI (loaded from skeleton/capture.ui), the
+camera controller, and the LED controller, then wires all buttons to their
+operations.
+
+Camera fallback order: Pixelink -> FLIR Blackfly -> CameraMock (hardware-free
+demo mode, useful for development and testing on machines without the rig).
+
+Based on MISHA (Multispectral Imaging System for Historical Artifacts),
+developed at RIT's Imaging Science and Museum Studies Programs.
+Original authors: Sai Keshav Sasanapuri, Cecelia Ahrens, Mallory Bridge,
+Eric Gao, Robert Maron. See README.md for full credits.
+"""
 from datetime import date
-import sys, os
+import sys, os, subprocess
 from PyQt5 import uic, QtWidgets, QtCore
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from controllers.led_mock import LEDMock
 from controllers.pixilink_controller import PixilinkController
 from controllers.blackfly_controller import BlackflyController
+from controllers.opencv_controller import OpenCVController
+from controllers.gphoto2_controller import Gphoto2Controller
+from controllers.camera_mock import CameraMock
 from controllers.led_controller import LEDController
 from operations.operation import Operation
 from cube_creation.build_cube import CubeBuilder
+from skeleton import macos_style
 import time
 # import pyi_splash
 
@@ -16,11 +36,17 @@ import time
 import numpy as np
 import tifffile
 
-'''
-MISHA Image Capturing Software Main
-Authors: Sai Keshav Sasanapuri, Cecelia Ahrens, Mallory Bridge, Eric Gao, Robert Maron
-Date: May 10, 2023
-'''
+
+# Camera backends in auto-selection priority order: dedicated rig cameras
+# first, then PTP DSLR bodies (highest fidelity for Kairo's converted
+# cameras), then generic UVC cameras, with the mock demo mode as the
+# last resort.
+CAMERA_BACKENDS = [
+    ("Pixelink", PixilinkController),
+    ("FLIR Blackfly", BlackflyController),
+    ("DSLR (gphoto2)", Gphoto2Controller),
+    ("Generic camera (OpenCV)", OpenCVController),
+]
 
 
 class Ui(QtWidgets.QMainWindow):
@@ -64,6 +90,7 @@ class Ui(QtWidgets.QMainWindow):
         self.pages.setCurrentWidget(self.startingPage)
         self.connectButtons()
         self.setOperations()
+        self.buildMenuBar()
         self.waveIndex = 0
 
         init_text = self.initialize_cameras()["Init text"]
@@ -83,21 +110,139 @@ class Ui(QtWidgets.QMainWindow):
     '''Initialize cameras'''
 
     def initialize_cameras(self):
-        try:
-            self.camera_control = PixilinkController()
-            init_text = self.intro_text + '\nPixelink camera initialization successful\n'
-            self.pixilinkSelect.setChecked(True)
-        except ValueError:
+        """
+        Automatically selects a camera: probes each backend in priority
+        order and uses the first one that connects. Every detection result
+        is reported in the start-page text so the user can see what the
+        app found and why this camera was chosen. Falls back to the mock
+        camera (hardware-free demo mode) when nothing is available.
+        """
+        skipped = []
+        for label, factory in CAMERA_BACKENDS:
             try:
-                self.camera_control = BlackflyController()
-                init_text = self.intro_text + '\nBlackfly camera initialization successful\n'
-                self.blackflySelect.setChecked(True)
-            except ValueError:
-                init_text = self.intro_text + '\nNo cameras found, ensure wired connection to computer and try again.\n'
-                return {"Success": False, "Init text": init_text}
-        return {"Success": True, "Init text": init_text}
+                self.camera_control = factory()
+            except ValueError as e:
+                skipped.append("{}: {}".format(label, e))
+                continue
+            except Exception as e:
+                skipped.append("{}: unexpected error ({})".format(label, e))
+                continue
 
-    '''Check if camera is initialized'''
+            model = getattr(self.camera_control, "camera_model", "") or ""
+            selected = label + ((" — " + model) if model else "")
+            init_text = self.intro_text + "\nCamera auto-selected: " + selected + "\n"
+            for s in skipped:
+                init_text += "  · " + s + "\n"
+            self._setCameraRadio(label)
+            return {"Success": True, "Init text": init_text}
+
+        # No hardware camera found: fall back to mock camera (demo mode)
+        self.camera_control = CameraMock()
+        init_text = (self.intro_text +
+                     '\nNo cameras found. Running in MOCK camera mode (demo only).\n')
+        for s in skipped:
+            init_text += "  · " + s + "\n"
+        init_text += ('Connect a Pixelink/Blackfly camera, a PTP DSLR body, or any '
+                      'USB camera, then restart the app or select a camera to '
+                      'try again.\n')
+        return {"Success": True, "Init text": init_text, "Mock": True}
+
+    def _setCameraRadio(self, label):
+        """Check the Camera Options radio button matching the selected backend."""
+        radios = {
+            "Pixelink": self.pixilinkSelect,
+            "FLIR Blackfly": self.blackflySelect,
+            "DSLR (gphoto2)": self.gphotoSelect,
+            "Generic camera (OpenCV)": self.opencvSelect,
+        }
+        radio = radios.get(label)
+        if radio is not None:
+            radio.setChecked(True)
+
+    '''Builds the macOS-style menu bar (app menu, standard Edit, Help)'''
+
+    def buildMenuBar(self):
+        """
+        Adds the macOS menu bar: the first menu merges into the system
+        app menu on macOS (About + Quit); the Edit menu gets the standard
+        editing actions; Help links to the MISHA project page.
+        """
+        from PyQt5.QtWidgets import QAction
+        from PyQt5.QtGui import QDesktopServices, QKeySequence
+        from PyQt5.QtCore import QUrl
+
+        menubar = self.menuBar()
+
+        # App menu (merged into the macOS application menu)
+        app_menu = menubar.addMenu("MISHA Image Capture")
+        app_menu.addAction("About MISHA Image Capture").triggered.connect(
+            self.showAbout)
+        quit_action = app_menu.addAction("Quit")
+        quit_action.setMenuRole(QAction.QuitRole)  # native ⌘Q on macOS
+
+        # Standard Edit menu (native shortcuts via QKeySequence standard keys)
+        edit_menu = menubar.addMenu("Edit")
+        for label, key, command in (
+                ("Cut", QKeySequence.Cut, "cut"),
+                ("Copy", QKeySequence.Copy, "copy"),
+                ("Paste", QKeySequence.Paste, "paste"),
+                ("Select All", QKeySequence.SelectAll, "selectAll")):
+            action = edit_menu.addAction(label)
+            action.setShortcut(key)
+            action.triggered.connect(
+                lambda _checked=False, c=command: self._sendEditCommand(c))
+
+        # Help menu
+        help_menu = menubar.addMenu("Help")
+        help_menu.addAction("MISHA Project Website").triggered.connect(
+            lambda: QDesktopServices.openUrl(
+                QUrl("https://chipr2022.wordpress.com")))
+        help_menu.addAction("About Project Kairo").triggered.connect(
+            self.showAboutKairo)
+
+    '''Sends a cut/copy/paste/selectAll command to the focused widget'''
+
+    def _sendEditCommand(self, command):
+        focused = QtWidgets.QApplication.focusWidget()
+        if focused is not None and hasattr(focused, command):
+            getattr(focused, command)()
+
+    '''Shows the About dialog with full MISHA credits'''
+
+    def showAbout(self):
+        QtWidgets.QMessageBox.about(
+            self, "About MISHA Image Capture",
+            '<h3>MISHA Image Capture (Python) Release 2025</h3>'
+            '<p><b>Project Kairo</b> macOS port.</p>'
+            '<p>Based on <b>MISHA</b> — the <i>Multispectral Imaging System '
+            'for Historical Artifacts</i>, developed by RIT\'s Imaging '
+            'Science and Museum Studies Programs to image small-format '
+            'historical documents, sheets, and leaf collections with '
+            'overwritten, faded, or unreadable text.</p>'
+            '<p>Grant <b>PR-268783-20</b>, funded by the National '
+            'Endowment for the Humanities.</p>'
+            '<p>Original authors: Sai Keshav Sasanapuri, Cecelia Ahrens, '
+            'Mallory Bridge, Eric Gao, Robert Maron.</p>'
+            '<p>Contact: David Messinger and Juilee Decker, RIT. '
+            'Website: <a href="https://chipr2022.wordpress.com">'
+            'chipr2022.wordpress.com</a></p>')
+
+    '''Shows the About dialog for the Project Kairo port'''
+
+    def showAboutKairo(self):
+        QtWidgets.QMessageBox.about(
+            self, "About Project Kairo",
+            '<h3>Project Kairo</h3>'
+            '<p>macOS port and extension of MISHA Image Capture:</p>'
+            '<ul>'
+            '<li>Cross-platform (macOS / Linux / Windows)</li>'
+            '<li>Automatic camera selection: Pixelink, FLIR Blackfly, '
+            'PTP DSLR bodies (gphoto2), any USB camera (OpenCV), and a '
+            'hardware-free mock demo mode</li>'
+            '<li>macOS-native application styling</li>'
+            '</ul>')
+
+    '''Checks if camera is initialized'''
 
     def check_if_camera_is_initialized(self):
         if self.camera_control is None:
@@ -171,6 +316,8 @@ class Ui(QtWidgets.QMainWindow):
         self.LEDversion2.clicked.connect(lambda: self.LEDvSelected('Version 2'))
         self.blackflySelect.clicked.connect(lambda: self.cameraSelected("Flir"))
         self.pixilinkSelect.clicked.connect(lambda: self.cameraSelected("Pixelink"))
+        self.opencvSelect.clicked.connect(lambda: self.cameraSelected("OpenCV"))
+        self.gphotoSelect.clicked.connect(lambda: self.cameraSelected("Gphoto2"))
 
     '''function connects start button to it's functionality'''
 
@@ -180,7 +327,13 @@ class Ui(QtWidgets.QMainWindow):
             basedir = os.path.dirname(__file__)
             video_path = os.path.join(basedir, "skeleton", "MISHA Party mode.mp4")
             if os.path.exists(video_path):
-                os.startfile(video_path)
+                # Cross-platform: 'open' on macOS, 'xdg-open' on Linux, os.startfile on Windows
+                if sys.platform == "darwin":
+                    subprocess.Popen(["open", video_path])
+                elif sys.platform.startswith("linux"):
+                    subprocess.Popen(["xdg-open", video_path])
+                elif sys.platform == "win32":
+                    os.startfile(video_path)
             self.startingInfo.setText(self.intro_text)
         elif starting_info_plain_text == "bella mode":
             self.pages.setStyleSheet("background-color: rgb(255, 170, 255);")
@@ -188,10 +341,12 @@ class Ui(QtWidgets.QMainWindow):
         elif not self.check_if_camera_is_initialized()["Success"]:
             self.message_box.show_error(message="Camera not connected. "
                                                 "Ensure wired connection and select camera to try again.")
-        elif isinstance(self.led_control, LEDMock):
+        elif isinstance(self.led_control, LEDMock) and not isinstance(self.camera_control, CameraMock):
+            # Real camera but no LED panel: block (LEDs are required for real capture)
             self.message_box.show_error(message="LEDs not connected. "
                                                 "Ensure wired connection and select version to try again.")
         else:
+            # Either a real LED panel, or full demo mode (mock camera + mock LEDs)
             self.setPageWithinPage(self.pages, self.capturingPage, self.capturingOps, self.metadataOp)
     '''Sets the LED panel version to version 1'''
 
@@ -216,17 +371,28 @@ class Ui(QtWidgets.QMainWindow):
             self.message_box.show_info(message="LEDs connected successfully")
             self.startingInfo.setText(self.intro_text + '\n{} LED panel initialization successful\n'.format(version))
         except ValueError as e:
+            if isinstance(self.camera_control, CameraMock):
+                # Demo mode: keep the mock LEDs so the full flow stays usable
+                self.startingInfo.setText(self.intro_text +
+                                          '\nRunning in MOCK LED mode (demo only). '
+                                          'No LED panel detected.\n')
+                return
             self.startingInfo.setText(self.intro_text + '\nLED panel initialization failed, ensure wired '
                                                         'connection to computer and select LED version to try '
                                                         'again.\n')
             self.message_box.show_error(message="LED panel initialization failed")
 
     def cameraSelected(self, camera='Flir'):
+        """(Re)initialize the selected camera type and update the status text."""
         try:
             if camera == 'Flir':
                 self.camera_control = BlackflyController()
             elif camera == 'Pixelink':
                 self.camera_control = PixilinkController()
+            elif camera == 'OpenCV':
+                self.camera_control = OpenCVController()
+            elif camera == 'Gphoto2':
+                self.camera_control = Gphoto2Controller()
             self.startingInfo.setText(self.intro_text +
                                       '\n{} camera initialization successful\n'.format(camera))
             self.message_box.show_info(message="Camera connected successfully")
@@ -902,7 +1068,11 @@ class Ui(QtWidgets.QMainWindow):
 
     '''Directly begin at any step by giving path to load images'''
     def load_images(self):
-        path_to_image_directory = "C:\\Users\\kesha\\Desktop\\MISHA data\\color checker mis images\\Color_checker_images_DataCube Raw Images"
+        # Dev helper: load a stack of .tif bands from a local directory.
+        # Set the path below to your own raw image folder.
+        path_to_image_directory = os.path.join(os.path.expanduser("~"), "MISHA data",
+                                               "color checker mis images",
+                                               "Color_checker_images_DataCube Raw Images")
         extension = ".tif"
 
         # Get all matching image files sorted by name
@@ -937,8 +1107,9 @@ class Ui(QtWidgets.QMainWindow):
 '''Starts up the Application'''
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    # qdarktheme.setup_theme()
+    # macOS-native look & feel (system font, Apple palette, window icon)
+    macos_style.apply(app)
     window = Ui()
-    # pyi_splash.close()
+    macos_style.apply(app, window)
     window.show()
     sys.exit(app.exec_())

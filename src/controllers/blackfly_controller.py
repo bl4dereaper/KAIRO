@@ -2,8 +2,10 @@ import sys
 from controllers.camera_interface import CameraInterface
 try:
     import PySpin
+    PYSPIK_AVAILABLE = True
 except Exception:
-    pass
+    PySpin = None
+    PYSPIK_AVAILABLE = False
 import time
 import numpy as np
 from threading import Thread
@@ -23,6 +25,9 @@ class BlackflyController(CameraInterface):
         :param None
         :return: None
         """
+        if not PYSPIK_AVAILABLE:
+            # PySpin (FLIR Spinnaker SDK) is not installed on this machine
+            raise ValueError("PySpin is not installed (FLIR Spinnaker SDK unavailable on this platform)")
 
         # initialize default exposure values
         self.ORIGINAL_EXPOSURE = 0.7

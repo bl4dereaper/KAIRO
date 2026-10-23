@@ -1,3 +1,4 @@
+import os
 from operations.operation import Operation
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -72,7 +73,7 @@ class FinishWorker(QObject):
 
             # generate xml (once)
             metadata_xml = dict2xml({"metadata": self.main.metadata})
-            with open(destination_dir + "\\" + name + "-metadata.xml", "w") as file:
+            with open(os.path.join(destination_dir, name + "-metadata.xml"), "w") as file:
                 file.write(metadata_xml)
 
             # save exposure profile

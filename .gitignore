@@ -1,6 +1,18 @@
+# Python
 **/__pycache__/
 *.pyc
+*.egg-info/
+.venv/
+venv/
+
+# IDE / editor
 .vscode
+.idea/
+
+# Packaging
 build/
 dist/
 *.spec
+
+# macOS
+.DS_Store

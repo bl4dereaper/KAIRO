@@ -279,7 +279,7 @@ class CubeBuilder():
         final_IntArray = (self.final_array * 65535).astype(np.uint16)
         # save cube
         try:
-            envi.save_image(destination + "\\" + name + ".hdr", final_IntArray,
+            envi.save_image(os.path.join(destination, name + ".hdr"), final_IntArray,
                             dtype=final_IntArray.dtype, interleave=self.interleave, ext=None,
                             byteorder=self.byte_order, metadata=self.create_metadata(), force=True)
             # self.img_array = []
@@ -293,7 +293,7 @@ class CubeBuilder():
         w = 0
         for x in range(0, len(self.wavelengths)):
             img = (np.copy(self.img_array)[:, :, w]*65535).astype(np.uint16)
-            imwrite(rawPath + "\\" + name + "-" + self.wavelengths[w] + ".tif", img, shape=(img.shape))
+            imwrite(os.path.join(rawPath, name + "-" + self.wavelengths[w] + ".tif"), img, shape=(img.shape))
             w = w + 1
 
         if len(self.flats_array) > 0 and self.img_array.shape == self.flats_array.shape:
@@ -305,16 +305,16 @@ class CubeBuilder():
             for x in range(0, len(self.wavelengths)):
                 #flat = np.copy(self.flats_array)[:, :, w]
                 flat = (np.copy(self.flats_array)[:, :, w]*65535).astype(np.uint16)
-                imwrite(flatsPath + "\\" + name + "-" + self.wavelengths[w] + ".tif", flat, shape=(img.shape))
+                imwrite(os.path.join(flatsPath, name + "-" + self.wavelengths[w] + ".tif"), flat, shape=(flat.shape))
                 w = w + 1
         if len(self.noise) > 0:
             # save noise image
             final_noise = (self.noise * 65535).astype(np.uint16)
-            imwrite(destination + "\\" + name + "-noise.tif", final_noise, shape=(self.noise.shape))
+            imwrite(os.path.join(destination, name + "-noise.tif"), final_noise, shape=(self.noise.shape))
 
         if len(self.bgr_img) > 0:
-            # save noise image
-            imwrite(destination + "\\" + name + "-true_color.tif", self.bgr_img, shape=(self.bgr_img.shape))
+            # save true color image
+            imwrite(os.path.join(destination, name + "-true_color.tif"), self.bgr_img, shape=(self.bgr_img.shape))
         return "Files Saved Successfully"
 
     '''Create Envi header file metadata'''

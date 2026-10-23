@@ -151,6 +151,20 @@
                    </property>
                   </widget>
                  </item>
+                 <item>
+                  <widget class="QRadioButton" name="opencvSelect">
+                   <property name="text">
+                    <string>Any (OpenCV / webcam)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QRadioButton" name="gphotoSelect">
+                   <property name="text">
+                    <string>DSLR (gphoto2)</string>
+                   </property>
+                  </widget>
+                 </item>
                 </layout>
                </widget>
               </item>

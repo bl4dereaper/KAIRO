@@ -28,7 +28,7 @@ class LEDController(LEDInterface):
 
             if not self.led_connection.isOpen():
                 self.led_connection.open()
-        except serial.SerialException or ValueError as e:
+        except (serial.SerialException, ValueError) as e:
             raise ValueError(e)
 
     def disconnect(self):

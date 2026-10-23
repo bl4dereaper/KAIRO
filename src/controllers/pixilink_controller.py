@@ -2,9 +2,10 @@ from controllers.camera_interface import CameraInterface
 
 try:
     from pixelinkWrapper import *
-    print("pixelinkWrapper imported successfully")
+    PIXELINK_AVAILABLE = True
 except Exception as ex:
-    print(f"pixelinkWrapper import failed: {ex}")
+    print(f"pixelinkWrapper not installed: {ex}")
+    PIXELINK_AVAILABLE = False
 import numpy as np
 import sys
 
@@ -32,6 +33,8 @@ class PixilinkController(CameraInterface):
             self.roiHeight = None
 
             # initialize camera
+            if not PIXELINK_AVAILABLE:
+                raise ValueError("Pixelink SDK (pixelinkWrapper) is not installed on this platform")
             ret = self.initialize_camera()
             if ret["Success"]:
                 # set inital exposure
