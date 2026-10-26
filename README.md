@@ -3,10 +3,13 @@
 **Kairo** — a low-cost, end-to-end multispectral imaging system for
 historical artifacts, by **Tom Shrieve**.
 
-Kairo is a cross-platform (macOS / Linux / Windows) release of
-[MISHA](https://github.com/bl4dereaper/MISHA) (*Multispectral Imaging
-System for Historical Artifacts*), developed by RIT's Imaging Science and
-Museum Studies Programs. Kairo adds support for general-purpose cameras
+Kairo is a cross-platform (macOS / Linux / Windows) application based on RIT's 
+[MISHA]([https://github.com/bl4dereaper/MISHA](https://github.com/palimpsest-pursuers/capturing))(*Multispectral Imaging
+System for Historical Artifacts*).
+
+
+
+Kairo adds support for general-purpose cameras
 (any USB camera via OpenCV) and converted full-spectrum DSLR/mirrorless
 bodies (Canon, Nikon, Fuji over libgphoto2), a hardware-free demo mode,
 **automatic camera selection** (the app probes every backend, picks the
