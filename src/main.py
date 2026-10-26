@@ -99,8 +99,9 @@ class Ui(QtWidgets.QMainWindow):
         try:
             self.led_control = LEDController()
         except ValueError as e:
-            init_text += '\nLED panel initialization failed, ensure wired connection to computer and select LED ' \
-                         'version to try again.\n'
+            init_text += ('LED panel not detected — CAMERA TEST MODE: capture can '
+                          'run without the LEDs (no per-band LED switching; frames '
+                          'are taken under continuous/ambient light).\n')
 
         self.startingInfo.setText(init_text)
 
@@ -344,9 +345,19 @@ class Ui(QtWidgets.QMainWindow):
             self.message_box.show_error(message="Camera not connected. "
                                                 "Ensure wired connection and select camera to try again.")
         elif isinstance(self.led_control, LEDMock) and not isinstance(self.camera_control, CameraMock):
-            # Real camera but no LED panel: block (LEDs are required for real capture)
-            self.message_box.show_error(message="LEDs not connected. "
-                                                "Ensure wired connection and select version to try again.")
+            # Real camera but no LED panel: CAMERA TEST MODE. The LED
+            # controller is a no-op mock, so per-band LED switching is
+            # skipped and all bands are captured under continuous/ambient
+            # light — enough to exercise the full camera pipeline.
+            self.message_box.show_warning(
+                title="Camera Test Mode",
+                message="No LED panel detected.\n\nContinuing in CAMERA TEST "
+                        "MODE: per-band LED switching is disabled and all "
+                        "bands will be captured under continuous/ambient "
+                        "light.\n\nConnect the LED panel later and select its "
+                        "version for full multispectral capture.")
+            self.setPageWithinPage(self.pages, self.capturingPage,
+                                   self.capturingOps, self.metadataOp)
         else:
             # Either a real LED panel, or full demo mode (mock camera + mock LEDs)
             self.setPageWithinPage(self.pages, self.capturingPage, self.capturingOps, self.metadataOp)
