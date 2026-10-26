@@ -1,4 +1,4 @@
-# Project Kairo — MISHA Image Capture
+# Kairo — MISHA-based multispectral imaging (Tom Shrieve)
 # Target: Python 3.12 (tested on macOS, Linux; Windows also supported)
 #
 # Core dependencies (installed on every platform):

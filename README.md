@@ -1,9 +1,9 @@
-# Project Kairo
+# Kairo
 
-**MISHA Image Capture Software** — a low-cost, end-to-end multispectral
-imaging system for historical artifacts, rebuilt for cross-platform use.
+**Kairo** — a low-cost, end-to-end multispectral imaging system for
+historical artifacts, by **Tom Shrieve**.
 
-Project Kairo is the cross-platform (macOS / Linux / Windows) evolution of
+Kairo is a cross-platform (macOS / Linux / Windows) release of
 [MISHA](https://github.com/bl4dereaper/MISHA) (*Multispectral Imaging
 System for Historical Artifacts*), developed by RIT's Imaging Science and
 Museum Studies Programs. Kairo adds support for general-purpose cameras
@@ -194,15 +194,17 @@ ratios are diagnostically useful.
 
 ## Acknowledgements & Credits
 
-**MISHA** — developed at the Rochester Institute of Technology (RIT) by the
-Imaging Science and Museum Studies Programs for small-format historical
-documents, sheet, and leaf collections with overwritten text, faded ink, or
-other unreadable/unknown content.
+**Kairo** was designed and built by **Tom Shrieve**.
+
+**MISHA** — the project Kairo is based on, developed at the Rochester
+Institute of Technology (RIT) by the Imaging Science and Museum Studies
+Programs for small-format historical documents, sheet, and leaf
+collections with overwritten text, faded ink, or other unreadable/unknown
+content.
 
 - **Original MISHA Image Capture (Python) authors:** Sai Keshav Sasanapuri,
   Cecelia Ahrens, Mallory Bridge, Eric Gao, Robert Maron
 - **RIT contacts:** David Messinger and Juilee Decker (RIT)
-- **Funding:** National Endowment for the Humanities, grant PR-268783-20
 - **Project website:** https://chipr2022.wordpress.com/
 - **Upstream repository:** https://github.com/bl4dereaper/MISHA
 
@@ -210,9 +212,6 @@ Additional contributions:
 
 - **Baumer camera controller (reference):** Julia Schenatto (IFUSP)
 - **Rectangle selection / MISHA Processing Software:** Eric Gao
-- **Project Kairo** (this fork): cross-platform port, automatic camera
-  selection with generic OpenCV + gphoto2 camera support, mock demo mode,
-  macOS-native application styling, float32/uint16 pipeline upgrade
 
 ## License
 

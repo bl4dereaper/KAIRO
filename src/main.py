@@ -1,13 +1,14 @@
 """
-MISHA Image Capturing Software — Main Entry Point (Project Kairo)
+Kairo — Main Entry Point
 
-Cross-platform (macOS/Linux/Windows) launcher for the MISHA multispectral
-imaging GUI. Initializes the UI (loaded from skeleton/capture.ui), the
-camera controller, and the LED controller, then wires all buttons to their
-operations.
+Cross-platform (macOS/Linux/Windows) launcher for Kairo, a multispectral
+imaging system designed and built by Tom Shrieve. Initializes the UI
+(loaded from skeleton/capture.ui), the camera controller, and the LED
+controller, then wires all buttons to their operations.
 
-Camera fallback order: Pixelink -> FLIR Blackfly -> CameraMock (hardware-free
-demo mode, useful for development and testing on machines without the rig).
+Camera fallback order: Pixelink -> FLIR Blackfly -> gphoto2 (DSLR) ->
+OpenCV (any USB camera) -> CameraMock (hardware-free demo mode), with
+automatic selection of the first backend that connects.
 
 Based on MISHA (Multispectral Imaging System for Historical Artifacts),
 developed at RIT's Imaging Science and Museum Studies Programs.
@@ -52,17 +53,17 @@ CAMERA_BACKENDS = [
 class Ui(QtWidgets.QMainWindow):
     led_control = LEDMock()
     camera_control = None
-    intro_text = 'Welcome to MISHA Image Capture Software\n\n' \
-                 'A low-cost, end-to-end multispectral imaging system, ' \
-                 'Multispectral Imaging System for Historical Artifacts ' \
-                 '(or “MISHA”), was developed by RIT’s Imaging Science ' \
-                 'and Museum Studies Programs to be used on small format ' \
-                 'historical documents, sheet, and leaf collections that ' \
-                 'have overwritten text, faded ink, or other un-readable or ' \
-                 'unknown content. The grant PR-268783-20 was funded by the ' \
-                 'National Endowment for the Humanities. See our website: https://chipr2022.wordpress.com/ For ' \
-                 'more information, contact please David Messinger and Juilee Decker at RIT.\n' \
-                 'MISHA Image Capture (Python) Release 2025, updated by Sai Keshav Sasanapuri\n'
+    intro_text = ('Welcome to Kairo\n\n'
+                 'Kairo is a low-cost, end-to-end multispectral imaging '
+                 'system designed and built by Tom Shrieve, based on '
+                 'MISHA (the "Multispectral Imaging System for Historical '
+                 'Artifacts"), developed by RIT\'s Imaging Science and '
+                 'Museum Studies Programs for small format historical '
+                 'documents, sheet, and leaf collections that have '
+                 'overwritten text, faded ink, or other un-readable or '
+                 'unknown content.\n'
+                 'For more information about MISHA, contact David Messinger '
+                 'and Juilee Decker at RIT: https://chipr2022.wordpress.com/\n')
     metadata = {}
     noiseImg = None
     led_op = None
@@ -174,8 +175,8 @@ class Ui(QtWidgets.QMainWindow):
         menubar = self.menuBar()
 
         # App menu (merged into the macOS application menu)
-        app_menu = menubar.addMenu("MISHA Image Capture")
-        app_menu.addAction("About MISHA Image Capture").triggered.connect(
+        app_menu = menubar.addMenu("Kairo")
+        app_menu.addAction("About Kairo").triggered.connect(
             self.showAbout)
         quit_action = app_menu.addAction("Quit")
         quit_action.setMenuRole(QAction.QuitRole)  # native ⌘Q on macOS
@@ -197,7 +198,7 @@ class Ui(QtWidgets.QMainWindow):
         help_menu.addAction("MISHA Project Website").triggered.connect(
             lambda: QDesktopServices.openUrl(
                 QUrl("https://chipr2022.wordpress.com")))
-        help_menu.addAction("About Project Kairo").triggered.connect(
+        help_menu.addAction("About Kairo").triggered.connect(
             self.showAboutKairo)
 
     '''Sends a cut/copy/paste/selectAll command to the focused widget'''
@@ -207,39 +208,40 @@ class Ui(QtWidgets.QMainWindow):
         if focused is not None and hasattr(focused, command):
             getattr(focused, command)()
 
-    '''Shows the About dialog with full MISHA credits'''
+    '''Shows the About dialog with full credits'''
 
     def showAbout(self):
         QtWidgets.QMessageBox.about(
-            self, "About MISHA Image Capture",
-            '<h3>MISHA Image Capture (Python) Release 2025</h3>'
-            '<p><b>Project Kairo</b> macOS port.</p>'
-            '<p>Based on <b>MISHA</b> — the <i>Multispectral Imaging System '
-            'for Historical Artifacts</i>, developed by RIT\'s Imaging '
-            'Science and Museum Studies Programs to image small-format '
-            'historical documents, sheets, and leaf collections with '
-            'overwritten, faded, or unreadable text.</p>'
-            '<p>Grant <b>PR-268783-20</b>, funded by the National '
-            'Endowment for the Humanities.</p>'
-            '<p>Original authors: Sai Keshav Sasanapuri, Cecelia Ahrens, '
-            'Mallory Bridge, Eric Gao, Robert Maron.</p>'
-            '<p>Contact: David Messinger and Juilee Decker, RIT. '
-            'Website: <a href="https://chipr2022.wordpress.com">'
+            self, "About Kairo",
+            '<h3>Kairo</h3>'
+            '<p>A low-cost, end-to-end multispectral imaging system '
+            'designed and built by <b>Tom Shrieve</b>.</p>'
+            '<p>Kairo is based on <b>MISHA</b> — the <i>Multispectral '
+            'Imaging System for Historical Artifacts</i>, developed by '
+            'RIT\'s Imaging Science and Museum Studies Programs to image '
+            'small-format historical documents, sheets, and leaf '
+            'collections with overwritten, faded, or unreadable text.</p>'
+            '<p>Original MISHA authors: Sai Keshav Sasanapuri, Cecelia '
+            'Ahrens, Mallory Bridge, Eric Gao, Robert Maron.</p>'
+            '<p>RIT contacts: David Messinger and Juilee Decker. '
+            'MISHA website: <a href="https://chipr2022.wordpress.com">'
             'chipr2022.wordpress.com</a></p>')
 
-    '''Shows the About dialog for the Project Kairo port'''
+    '''Shows the About dialog for the Kairo release'''
 
     def showAboutKairo(self):
         QtWidgets.QMessageBox.about(
-            self, "About Project Kairo",
-            '<h3>Project Kairo</h3>'
-            '<p>macOS port and extension of MISHA Image Capture:</p>'
+            self, "About Kairo",
+            '<h3>Kairo</h3>'
+            '<p>Designed and built by <b>Tom Shrieve</b> — a '
+            'cross-platform (macOS / Linux / Windows) release of MISHA '
+            'Image Capture.</p>'
             '<ul>'
-            '<li>Cross-platform (macOS / Linux / Windows)</li>'
             '<li>Automatic camera selection: Pixelink, FLIR Blackfly, '
             'PTP DSLR bodies (gphoto2), any USB camera (OpenCV), and a '
             'hardware-free mock demo mode</li>'
             '<li>macOS-native application styling</li>'
+            '<li>float32/uint16 imaging pipeline</li>'
             '</ul>')
 
     '''Checks if camera is initialized'''

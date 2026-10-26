@@ -1,5 +1,5 @@
 """
-macOS-Native Styling for Project Kairo (MISHA Image Capture GUI)
+macOS-Native Styling for Kairo (MISHA-based multispectral imaging GUI)
 
 Applies a macOS "Big Sur / Sequoia" light aesthetic to the PyQt5 UI:
   - Apple system palette (systemBlue #007aff, systemGray #8e8e93,
@@ -413,9 +413,9 @@ def apply(app, window=None):
     Apply the macOS-native look to a QApplication (and optionally a main
     window): app identity, system font, stylesheet, and window icon.
     """
-    app.setApplicationName("MISHA Image Capture")
-    app.setApplicationDisplayName("MISHA Image Capture")
-    app.setOrganizationName("Project Kairo")
+    app.setApplicationName("Kairo")
+    app.setApplicationDisplayName("Kairo")
+    app.setOrganizationName("Tom Shrieve")
 
     # San Francisco (macOS system font) with graceful fallbacks: pick the
     # first family actually present on the system.
@@ -433,4 +433,4 @@ def apply(app, window=None):
 
     if window is not None:
         window.setWindowIcon(build_app_icon())
-        window.setWindowTitle("MISHA Image Capture")
+        window.setWindowTitle("Kairo")
