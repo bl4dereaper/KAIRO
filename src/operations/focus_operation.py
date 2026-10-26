@@ -4,12 +4,21 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import time
 import numpy as np
-from threading import Thread
 import cv2
 
 '''
-Focus Operation for Displaying "Live" Images for Camara Focus Adjustment
-Written by Sai Keshav Sasanapuri and Cecelia Ahrens
+Focus Operation for Displaying "Live" Images for Camera Focus Adjustment
+Written by Sai Keshav Sasanapuri and Cecelia Ahrens;
+live view + focus-assist (peaking) extended in Project Kairo.
+
+The worker loops the camera's FAST preview path (capture_preview):
+  - DSLRs (gphoto2): the camera's live-view buffer, no shutter fire,
+    nothing written to the card.
+  - UVC cameras (OpenCV): a normal frame read, already real-time.
+Per frame it shows the live view, a zoomed pane, a sharpness score
+(Laplacian variance), and — when "Focus Assist" is on — a focus-peaking
+overlay that highlights the highest-contrast edges in red, the same
+aid mirrorless bodies show on their viewfinder.
 '''
 
 
@@ -22,6 +31,8 @@ class FocusOp(Operation):
         self.main.worker = FocusWorker()
         self.main.worker.moveToThread(self.main.thread)
         self.main.worker.main = self.main
+        # Pick up the current state of the Focus Assist toggle
+        self.main.worker.focus_assist = self.main.focusAssistToggle.isChecked()
 
         # connect slots
         self.main.thread.started.connect(self.main.worker.run)
@@ -111,43 +122,53 @@ class FocusWorker(QObject):
     notCancelled = True
     main = None
     zoom_factor = 1
+    # Focus Assist: red peaking overlay on the highest-contrast edges
+    focus_assist = True
     finished = pyqtSignal()
     progress_signal = pyqtSignal(str)
     message_signal = pyqtSignal(str, str)
     end_operation = pyqtSignal(str)
 
-    def calculate_sharpness(self, numpy_img, method):
-        sharpness = 0
-        if method == 'gradient':
-            # Calculate Sharpness
-            # Gradient Method - OG Method
-            min_val = np.min(numpy_img)
-            max_val = np.max(numpy_img)
-            img_normalized = (numpy_img - min_val) / (max_val - min_val)
+    PEAK_WIDTH = 1280   # working width for peaking / sharpness (fast)
 
-            # Calculate gradient
-            fx, fy = np.gradient(img_normalized * 255)
+    def _downsample(self, frame, width):
+        """Downsample a float32 grayscale frame to the given width."""
+        h, w = frame.shape[:2]
+        if w > width:
+            return cv2.resize(frame, (width, int(h * width / w)),
+                              interpolation=cv2.INTER_AREA)
+        return frame
 
-            sharpness = round(np.max([np.max(fx), np.max(fy)]))
+    @staticmethod
+    def _to_uint8_gray(frame):
+        return (frame * 255).clip(0, 255).astype(np.uint8)
 
-        elif method == 'laplacian':
-            # laplacian method
-            # The Laplacian operator detects edges by calculating the second derivative of the image intensity.
-            # The variance of the Laplacian gives a measure of focus—higher values indicate sharper images
-            laplacian = cv2.Laplacian(numpy_img, cv2.CV_64F)
-            variance = laplacian.var()
+    def _peaking_frame(self, frame):
+        """
+        Focus-assist peaking: return an RGB uint8 frame with the
+        highest-contrast edges (top ~2% of the Sobel magnitude, above a
+        noise floor) tinted red, so in-focus areas 'pop' on the live
+        view — the same aid viewfinders use.
+        """
+        small = self._downsample(frame, self.PEAK_WIDTH)
+        gray = self._to_uint8_gray(small)
+        gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+        gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+        mag = np.hypot(gx, gy)
+        # Top ~2% of edge energy, with a noise floor for flat scenes
+        threshold = max(float(np.percentile(mag, 98)), 18.0)
+        rgb = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
+        rgb[mag >= threshold] = (0, 0, 255)
+        return rgb
 
-            sharpness = round(variance)
-
-        elif method == 'brenner':
-            # Brenner gradient method
-            # This method uses differences between adjacent pixels to evaluate sharpness. It is simpler and faster
-            shifted = np.roll(numpy_img, -1, axis=1)
-            gradient = (numpy_img - shifted) ** 2
-            sharpness = round(np.sum(gradient) / 1000000)
-
-        if self.notCancelled:
-            self.sharpness.emit(sharpness)
+    def _sharpness(self, frame):
+        """
+        Sharpness score: variance of the Laplacian on a downsampled
+        frame. Higher = sharper. Cheap enough to run every frame.
+        """
+        small = self._downsample(frame, 1024)
+        gray = self._to_uint8_gray(small)
+        return int(round(cv2.Laplacian(gray, cv2.CV_64F).var()))
 
     def run(self):
         self.progress_signal.emit("Starting Camera")
@@ -170,19 +191,26 @@ class FocusWorker(QObject):
         self.progress_signal.emit("close")
 
         while self.notCancelled:
-            ret = self.main.camera_control.capture()
+            # Live view: use the fast preview path (DSLR live-view buffer,
+            # or a real-time UVC read). No shutter fire, no card writes.
+            ret = self.main.camera_control.capture_preview()
             if not ret["Success"]:
                 self.end_operation.emit("Image acquisition failed")
                 return
 
             frame = ret["Image"]
             frame_no += 1
-            img = self.main.camera_control.convert_nparray_to_QPixmap(frame)
+
+            if self.focus_assist:
+                img = self.main.camera_control.convert_nparray_to_QPixmap(
+                    self._peaking_frame(frame))
+            else:
+                img = self.main.camera_control.convert_nparray_to_QPixmap(frame)
+
             self.mainFrame.emit(img)
             if self.zoom_factor > 1:
                 self.x2Frame.emit(img, self.zoom_factor)
-            if frame_no % 10 == 0:
-                Thread(target=self.calculate_sharpness, args=(frame, 'gradient')).start()
+            self.sharpness.emit(self._sharpness(frame))
 
         self.main.camera_control.End_Acquisition()
         self.finished.emit()

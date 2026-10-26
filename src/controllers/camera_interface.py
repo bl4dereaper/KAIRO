@@ -81,6 +81,16 @@ class CameraInterface(ABC):
         """
         pass
 
+    def capture_preview(self) -> dict:
+        """
+        Capture one fast live-view / preview frame for display (the
+        Focus step). Default: a regular full capture. Controllers with
+        a dedicated live-view path (PTP live view, UVC cameras)
+        override this for a much higher frame rate.
+        :return: same shape as capture()
+        """
+        return self.capture()
+
     @abstractmethod
     def capture_at_exposure(self, exposure, waveIndex) -> dict:
         """

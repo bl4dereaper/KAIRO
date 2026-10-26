@@ -553,6 +553,7 @@ class Ui(QtWidgets.QMainWindow):
             )
         )
         self.focusZoomFactor.valueChanged.connect(self.updateFocusZoomFactor)
+        self.focusAssistToggle.toggled.connect(self.updateFocusAssist)
 
     '''Starts focus operation and moves to the focus display step within focus page'''
 
@@ -571,6 +572,12 @@ class Ui(QtWidgets.QMainWindow):
 
     def updateFocusZoomFactor(self, value):
         self.focus_op.updateZoomFactor(value)
+
+    '''Forward the Focus Assist (peaking) toggle to the running focus worker'''
+
+    def updateFocusAssist(self, enabled):
+        if self.focus_op is not None and getattr(self.focus_op, "worker", None) is not None:
+            self.focus_op.worker.focus_assist = enabled
 
     '''Finishes focus operation and moves to light operation page, initial infomation step'''
 

@@ -143,6 +143,18 @@ QPushButton:disabled {{
     background-color: #fafafa;
 }}
 
+/* Checkable toggle buttons (e.g. Focus Assist): blue fill while ON */
+QPushButton:checked {{
+    background-color: {BLUE};
+    border-color: {BLUE};
+    color: #ffffff;
+    font-weight: 600;
+}}
+QPushButton:checked:hover {{
+    background-color: #0a7cff;
+    border-color: #0a7cff;
+}}
+
 /* macOS default buttons: blue fill, white text */
 {primary} {{
     background-color: {BLUE};

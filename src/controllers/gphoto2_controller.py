@@ -276,9 +276,43 @@ class Gphoto2Controller(CameraInterface):
             except Exception:
                 pass
 
-            return {"Success": True, "Image": img, "Error": None}
+            return {"Success": True, "Image": self._apply_exposure(img), "Error": None}
         except Exception as ex:
             return {"Success": False, "Image": None, "Error": str(ex)}
+
+    def _preview_once(self) -> dict:
+        """
+        One live-view preview read: pulls the camera's live-view buffer
+        (small JPEG on most bodies) without firing the shutter and
+        without writing anything to the memory card. This is what the
+        Focus step uses for its live view.
+        :return: dict {"Success": bool, "Image": ndarray | None, "Error": str}
+        """
+        try:
+            camera_file = self.camera.capture_preview()
+            mime = camera_file.get_mime_type()
+
+            fd, tmp_path = tempfile.mkstemp(
+                prefix="kairo_gphoto2_prev_", suffix=".bin")
+            os.close(fd)
+            try:
+                camera_file.save(tmp_path)
+                img = self._decode_image_file(tmp_path, mime)
+            finally:
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+
+            return {"Success": True, "Image": self._apply_exposure(img), "Error": None}
+        except Exception as ex:
+            return {"Success": False, "Image": None, "Error": str(ex)}
+
+    def _apply_exposure(self, img: np.ndarray) -> np.ndarray:
+        """Apply the (software-emulated) exposure scale to a decoded frame."""
+        if self._exposure_scale != 1.0 and img is not None:
+            img = np.clip(img * self._exposure_scale, 0.0, 1.0).astype(np.float32)
+        return img
 
     def capture(self):
         """
@@ -303,6 +337,29 @@ class Gphoto2Controller(CameraInterface):
 
         if not result["Success"]:
             print("gphoto2 capture failed: {}".format(result.get("Error")))
+            return {"Success": False, "Image": None}
+        return {"Success": True, "Image": result["Image"]}
+
+    def capture_preview(self):
+        """
+        Capture one fast live-view preview frame (no shutter fire,
+        nothing written to the card) for the Focus step's live view.
+        Reconnects once and retries on failure, like capture().
+        :return: dict {"Success": bool, "Image": np.ndarray | None}
+        """
+        if not self.check_camera_initialized():
+            return {"Success": False, "Image": None}
+
+        result = self._preview_once()
+        if not result["Success"]:
+            print("gphoto2 preview failed ({}); reconnecting and "
+                  "retrying once...".format(result.get("Error")))
+            self.uninitialize_camera()
+            if self.initialize_camera()["Success"]:
+                result = self._preview_once()
+
+        if not result["Success"]:
+            print("gphoto2 preview failed: {}".format(result.get("Error")))
             return {"Success": False, "Image": None}
         return {"Success": True, "Image": result["Image"]}
 
