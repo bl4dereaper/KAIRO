@@ -29,7 +29,7 @@ class TestLEDMode(Operation):
         self.main.worker.finished.connect(self.finished)
 
         # update UI info text
-        self.main.startingInfo.setText("Testing LEDs")
+        self.main._set_starting_info("Testing LEDs")
 
         # start
         self.main.thread.start()
@@ -37,7 +37,7 @@ class TestLEDMode(Operation):
     '''Update UI text with current wavelength'''
 
     def update_text(self, text):
-        self.main.startingInfo.setText("Testing LEDs!\n\nFlashing wavelength: " + text)
+        self.main._set_starting_info("Testing LEDs!\n\nFlashing wavelength: " + text)
 
     '''Cancel Operation'''
 
@@ -51,7 +51,7 @@ class TestLEDMode(Operation):
         self.main.thread.quit()
         self.main.cancelLEDsButton.setEnabled(False)
         self.main.testLEDsButton.setEnabled(True)
-        self.main.startingInfo.setText(self.main.intro_text)
+        self.main._set_starting_info(self.main.intro_text)
         self.main.testLEDsButton.setText("Test LEDs")
 
 

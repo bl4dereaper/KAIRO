@@ -31,8 +31,8 @@ class FocusOp(Operation):
         self.main.worker = FocusWorker()
         self.main.worker.moveToThread(self.main.thread)
         self.main.worker.main = self.main
-        # Pick up the current state of the Focus Assist toggle
-        self.main.worker.focus_assist = self.main.focusAssistToggle.isChecked()
+        # Pick up the current state of the Focus Assist switch
+        self.main.worker.focus_assist = self.main.focusAssist.isChecked()
 
         # connect slots
         self.main.thread.started.connect(self.main.worker.run)

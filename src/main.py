@@ -87,7 +87,17 @@ class Ui(QtWidgets.QMainWindow):
         basedir = os.path.dirname(__file__)
         uic.loadUi(os.path.join(basedir, "skeleton", "capture.ui"), self)
 
-        self.startingInfo.setText(self.intro_text)
+        self._build_top_bar()
+        self._install_focus_assist_switch()
+        # Display-only text boxes (step instructions / info): read-only so
+        # they render as plain text on the panel instead of input fields
+        for _info in ("noiseInfo", "focasInfo", "lightInfo", "objectInfo",
+                      "objectStep2Text", "flatsInfo", "flatsStep2Text",
+                      "rotateInfo", "calibrationInfo", "cropInfo",
+                      "finishInfoText"):
+            getattr(self, _info).setReadOnly(True)
+        self._set_starting_info(self.intro_text)
+        self.startingInfo.setReadOnly(True)
         self.pages.setCurrentWidget(self.startingPage)
         self.connectButtons()
         self.setOperations()
@@ -98,18 +108,135 @@ class Ui(QtWidgets.QMainWindow):
 
         try:
             self.led_control = LEDController()
+            self._set_led_status("Panel connected", "on")
         except ValueError as e:
+            self._set_led_status("Test mode", "warn")
             init_text += ('LED panel not detected — CAMERA TEST MODE: capture can '
                           'run without the LEDs (no per-band LED switching; frames '
                           'are taken under continuous/ambient light).\n')
 
-        self.startingInfo.setText(init_text)
+        self._set_starting_info(init_text)
 
         # dev mode
         # self.titleInput.setText("dev mode")  # del
         # self.institutionOrOwnerInput.setText("dev mode")  # del
 
     '''Initialize cameras'''
+
+    # ------------------------------------------------------------------
+    # Top bar: step indicator + device status chips
+    # ------------------------------------------------------------------
+
+    def _build_top_bar(self):
+        """Populate the top bar with the workflow step indicator and
+        the Camera / LED status chips."""
+        self.step_defs = [
+            ("Setup", self.metadataOp),
+            ("Noise", self.noiseOp),
+            ("Focus", self.focusOp),
+            ("Light", self.lightOp),
+            ("Object", self.objectOp),
+            ("Flats", self.flatsOp),
+            ("Edit", self.editOp),
+            ("Finish", self.finishOp),
+        ]
+        self._page_index = {}
+        self.step_segments = []
+        for i, (name, page) in enumerate(self.step_defs):
+            self._page_index[page] = i
+            lab = QtWidgets.QLabel(name)
+            lab.setObjectName("stepSeg")
+            lab.setProperty("state", "future")
+            self.stepBarLayout.addWidget(lab)
+            self.step_segments.append((name, lab))
+            if i < len(self.step_defs) - 1:
+                sep = QtWidgets.QLabel("·")
+                sep.setObjectName("stepSep")
+                self.stepBarLayout.addWidget(sep)
+        self._update_step_indicator(-1)
+
+        self.status_chips = {
+            "camera": self._add_status_chip("Camera"),
+            "led": self._add_status_chip("LED"),
+        }
+
+    def _add_status_chip(self, title):
+        """Create a (dot, text) status chip in the top bar."""
+        chip = QtWidgets.QFrame()
+        chip.setObjectName("statusChip")
+        lay = QtWidgets.QHBoxLayout(chip)
+        lay.setContentsMargins(10, 3, 12, 3)
+        lay.setSpacing(6)
+        dot = QtWidgets.QLabel("●")
+        dot.setObjectName("statusDot")
+        dot.setStyleSheet("color: #5a5a5e;")
+        txt = QtWidgets.QLabel(title)
+        txt.setObjectName("statusChipText")
+        lay.addWidget(dot)
+        lay.addWidget(txt)
+        self.statusBarLayout.addWidget(chip)
+        return (dot, txt)
+
+    _CHIP_COLORS = {"on": "#30d158", "warn": "#ff9f0a", "off": "#5a5a5e"}
+
+    def _set_chip(self, key, text, state):
+        dot, txt = self.status_chips[key]
+        dot.setStyleSheet("color: {};".format(self._CHIP_COLORS.get(state, "off")))
+        txt.setText(text)
+
+    def _set_camera_status(self, text, state="on"):
+        self._set_chip("camera", "Camera · " + text, state)
+
+    def _set_led_status(self, text, state="on"):
+        self._set_chip("led", "LED · " + text, state)
+
+    def _set_seg_state(self, lab, state):
+        lab.setProperty("state", state)
+        s = lab.style()
+        s.unpolish(lab)
+        s.polish(lab)
+
+    def _update_step_indicator(self, idx):
+        """idx: -1 = before the workflow (start page), else step index."""
+        for i, (_name, lab) in enumerate(self.step_segments):
+            if idx >= 0 and i < idx:
+                state = "done"
+            elif i == idx:
+                state = "active"
+            else:
+                state = "future"
+            self._set_seg_state(lab, state)
+
+    def _install_focus_assist_switch(self):
+        """Replace the placeholder Focus Assist button (from the .ui)
+        with a real macOS-style Switch widget in the same layout slot."""
+        from skeleton.switch_widget import Switch
+        btn = self.focusAssistToggle
+        parent_lay = btn.parent().layout()
+        idx = parent_lay.indexOf(btn)
+        sw = Switch("Focus Assist")
+        sw.setChecked(True)
+        parent_lay.insertWidget(idx, sw)
+        btn.deleteLater()
+        self.focusAssist = sw
+
+    def _set_starting_info(self, text):
+        """Render the start-page intro as styled HTML: KAIRO hero title,
+        a micro-label, and the body text (first 'Welcome' line dropped)."""
+        import html as _html
+        lines = [l for l in (text or "").strip().split("\n")
+                 if l.strip() and not l.strip().lower().startswith("welcome to")]
+        body = "<br>".join(_html.escape(l).replace("  ", "&nbsp;&nbsp;")
+                           for l in lines)
+        self.startingInfo.setHtml(
+            '<div style="font-size:26px; font-weight:700; color:#f5f5f7;'
+            ' letter-spacing:3px;">KAIRO</div>'
+            '<div style="font-size:10px; color:#6e6e73; letter-spacing:2px;'
+            ' margin:6px 0 22px 0;">MULTISPECTRAL CAPTURE &nbsp;&middot;&nbsp; '
+            'BY TOM SHRIEVE</div>'
+            '<div style="font-size:13px; line-height:1.65; color:#c7c7cc;">'
+            + body + "</div>"
+        )
 
     def initialize_cameras(self):
         """
@@ -132,6 +259,7 @@ class Ui(QtWidgets.QMainWindow):
 
             model = getattr(self.camera_control, "camera_model", "") or ""
             selected = label + ((" — " + model) if model else "")
+            self._set_camera_status(selected, "on")
             init_text = self.intro_text + "\nCamera auto-selected: " + selected + "\n"
             for s in skipped:
                 init_text += "  · " + s + "\n"
@@ -140,6 +268,7 @@ class Ui(QtWidgets.QMainWindow):
 
         # No hardware camera found: fall back to mock camera (demo mode)
         self.camera_control = CameraMock()
+        self._set_camera_status("Mock (demo)", "warn")
         init_text = (self.intro_text +
                      '\nNo cameras found. Running in MOCK camera mode (demo only).\n')
         for s in skipped:
@@ -337,10 +466,10 @@ class Ui(QtWidgets.QMainWindow):
                     subprocess.Popen(["xdg-open", video_path])
                 elif sys.platform == "win32":
                     os.startfile(video_path)
-            self.startingInfo.setText(self.intro_text)
+            self._set_starting_info(self.intro_text)
         elif starting_info_plain_text == "bella mode":
             self.pages.setStyleSheet("background-color: rgb(255, 170, 255);")
-            self.startingInfo.setText(self.intro_text)
+            self._set_starting_info(self.intro_text)
         elif not self.check_if_camera_is_initialized()["Success"]:
             self.message_box.show_error(message="Camera not connected. "
                                                 "Ensure wired connection and select camera to try again.")
@@ -382,15 +511,15 @@ class Ui(QtWidgets.QMainWindow):
                                                     '660', '730', '850', '940']
 
             self.message_box.show_info(message="LEDs connected successfully")
-            self.startingInfo.setText(self.intro_text + '\n{} LED panel initialization successful\n'.format(version))
+            self._set_starting_info(self.intro_text + '\n{} LED panel initialization successful\n'.format(version))
         except ValueError as e:
             if isinstance(self.camera_control, CameraMock):
                 # Demo mode: keep the mock LEDs so the full flow stays usable
-                self.startingInfo.setText(self.intro_text +
+                self._set_starting_info(self.intro_text +
                                           '\nRunning in MOCK LED mode (demo only). '
                                           'No LED panel detected.\n')
                 return
-            self.startingInfo.setText(self.intro_text + '\nLED panel initialization failed, ensure wired '
+            self._set_starting_info(self.intro_text + '\nLED panel initialization failed, ensure wired '
                                                         'connection to computer and select LED version to try '
                                                         'again.\n')
             self.message_box.show_error(message="LED panel initialization failed")
@@ -406,11 +535,11 @@ class Ui(QtWidgets.QMainWindow):
                 self.camera_control = OpenCVController()
             elif camera == 'Gphoto2':
                 self.camera_control = Gphoto2Controller()
-            self.startingInfo.setText(self.intro_text +
+            self._set_starting_info(self.intro_text +
                                       '\n{} camera initialization successful\n'.format(camera))
             self.message_box.show_info(message="Camera connected successfully")
         except ValueError:
-            self.startingInfo.setText(self.intro_text + '\n{} camera initialization failed, ensure wired '
+            self._set_starting_info(self.intro_text + '\n{} camera initialization failed, ensure wired '
                                                         'connection to computer and try again.\n'.format(camera))
             self.message_box.show_error(message="Camera initialization failed")
 
@@ -553,7 +682,7 @@ class Ui(QtWidgets.QMainWindow):
             )
         )
         self.focusZoomFactor.valueChanged.connect(self.updateFocusZoomFactor)
-        self.focusAssistToggle.toggled.connect(self.updateFocusAssist)
+        self.focusAssist.toggled.connect(self.updateFocusAssist)
 
     '''Starts focus operation and moves to the focus display step within focus page'''
 
@@ -1040,6 +1169,7 @@ class Ui(QtWidgets.QMainWindow):
 
     def setPage(self, widget, page):
         widget.setCurrentWidget(page)
+        self._update_step_indicator(self._page_index.get(page, -1))
 
     '''Sets the UI to the given nested pages and widgets'''
 
@@ -1073,7 +1203,7 @@ class Ui(QtWidgets.QMainWindow):
                 self.cancelLEDsButton.setEnabled(True)
                 self.led_op.on_start(self)
         except:
-            self.startingInfo.setText("Error in test LEDs clicked")
+            self._set_starting_info("Error in test LEDs clicked")
 
     '''Cancels the test LED process'''
 
@@ -1082,9 +1212,9 @@ class Ui(QtWidgets.QMainWindow):
             self.cancelLEDsButton.setEnabled(False)
             self.testLEDsButton.setEnabled(True)
             self.led_op.cancel()
-            self.startingInfo.setText(self.intro_text)
+            self._set_starting_info(self.intro_text)
         except:
-            self.startingInfo.setText("Error in test LEDs cancel")
+            self._set_starting_info("Error in test LEDs cancel")
 
     '''Directly begin at any step by giving path to load images'''
     def load_images(self):
