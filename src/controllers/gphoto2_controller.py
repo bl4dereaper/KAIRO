@@ -1,22 +1,28 @@
 """
-gphoto2 DSLR Camera Controller (Project Kairo)
+gphoto2 DSLR Camera Controller (Kairo)
 
 Supports converted full-spectrum DSLR/mirrorless bodies (Canon, Nikon,
-Fuji, and other PTP cameras) over USB using the official libgphoto2
-python bindings (PyPI package: gphoto2). One library covers all three
-vendors, which is why Project Kairo chose it as the DSLR backend
-(see README).
+Fuji, and other PTP cameras) over USB using the libgphoto2 python
+bindings (PyPI package: gphoto2). One library covers all vendors, which
+is why Kairo chose it as the DSLR backend (see README).
 
-Verified in the camlib database (libgphoto2 >= 2.5.18) e.g.:
-    Fuji Fujifilm GFX100 / GFX100 II / GFX 100S, X-series,
-    Canon EOS R / 5D, Nikon Z / D series, ...
+Verified live with a Fujifilm GFX 100 (appears to gphoto2 as the
+generic "USB PTP Class Camera" driver, which fully supports capture).
 
 v1 behavior:
   - Auto-detects PTP cameras and connects to the first one found
-    (reporting its model name for the UI).
-  - Captures full-resolution stills (camera's file format: JPEG or RAW)
-    and decodes them in RAM -- JPEG via OpenCV, RAW via rawpy (no
-    camera white balance).
+    (reporting its model name for the UI), retrying transient
+    USB-claim failures (macOS can be slow to release a claim after a
+    crashed process).
+  - Captures full-resolution stills in the camera's file format
+    (JPEG or RAW), saves the transfer to a temp file at the C level
+    (get_data_and_size() in this binding materializes the whole image
+    as a Python int list — unusable for 100 MP files), decodes it in
+    RAM — JPEG via OpenCV, RAW via rawpy (no camera white balance) —
+    then deletes the file from the camera's memory card.
+  - If a capture fails (PTP sessions go stale when the camera screen
+    sleeps or the USB link hiccups), the controller reconnects once
+    and retries.
   - Exposure is emulated in software (brightness scale). Mapping
     exposure floats to discrete camera shutter speeds via the gphoto2
     config tree is a Kairo roadmap item (config-tree caching, RAW
@@ -28,7 +34,12 @@ Optional install:
 
 If the dependencies are missing, this module imports cleanly and the
 controller raises ValueError, so the app falls back to other cameras.
+Written by Tom Shrieve (Kairo); see README.md for full credits.
 """
+import os
+import tempfile
+import time
+
 import numpy as np
 import cv2
 from controllers.camera_interface import CameraInterface
@@ -75,7 +86,11 @@ class Gphoto2Controller(CameraInterface):
     # ------------------------------------------------------------------
 
     def _connect(self):
-        """Scan for PTP cameras and connect to the first one found."""
+        """
+        Scan for PTP cameras and connect to the first one found.
+        Retries up to 3 times on transient USB-claim failures (macOS
+        IOKit can lag in releasing a claim after a process dies).
+        """
         try:
             detected = list(gphoto2.Camera.autodetect())
         except Exception as ex:
@@ -88,20 +103,34 @@ class Gphoto2Controller(CameraInterface):
         name, addr = detected[0]
         self.camera_model = name
 
-        try:
-            port_info_list = gphoto2.PortInfoList()
-            port_info_list.load()
-            abilities_list = gphoto2.CameraAbilitiesList()
-            abilities_list.load()
+        last_err = None
+        for attempt in range(3):
+            cam = None
+            try:
+                port_info_list = gphoto2.PortInfoList()
+                port_info_list.load()
+                abilities_list = gphoto2.CameraAbilitiesList()
+                abilities_list.load()
 
-            self.camera = gphoto2.Camera()
-            port_idx = port_info_list.lookup_path(addr)
-            self.camera.set_port_info(port_info_list[port_idx])
-            model_idx = abilities_list.lookup_model(name)
-            self.camera.set_abilities(abilities_list[model_idx])
-            self.camera.init()
-        except Exception as ex:
-            raise ValueError("Failed to connect to {}: {}".format(name, ex))
+                cam = gphoto2.Camera()
+                cam.set_port_info(
+                    port_info_list[port_info_list.lookup_path(addr)])
+                model_idx = abilities_list.lookup_model(name)
+                if model_idx is not None and model_idx >= 0:
+                    cam.set_abilities(abilities_list[model_idx])
+                cam.init()
+                self.camera = cam
+                return
+            except Exception as ex:
+                last_err = ex
+                if cam is not None:
+                    try:
+                        cam.exit()
+                    except Exception:
+                        pass
+                if attempt < 2:
+                    time.sleep(1.5 * (attempt + 1))
+        raise ValueError("Failed to connect to {}: {}".format(name, last_err))
 
     def initialize_camera(self):
         """Re-open the camera if the connection was lost."""
@@ -118,7 +147,8 @@ class Gphoto2Controller(CameraInterface):
         return self.camera is not None
 
     def uninitialize_camera(self):
-        """Close the gphoto2 camera connection."""
+        """Close the gphoto2 camera connection (best-effort; PTP teardown
+        can itself fail with [-1] on a stale link, which is harmless)."""
         try:
             if self.camera is not None:
                 self.camera.exit()
@@ -178,24 +208,24 @@ class Gphoto2Controller(CameraInterface):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _decode_image_bytes(data: bytes, mime: str) -> np.ndarray:
+    def _decode_image_file(path: str, mime: str) -> np.ndarray:
         """
-        Decode captured image bytes into a grayscale float32 array in [0, 1].
-        JPEG decodes directly; RAW (RAF/CR2/NEF/ARW/...) decodes via rawpy
-        when installed.
+        Decode a captured image file into a grayscale float32 array in
+        [0, 1]. JPEG decodes via OpenCV; RAW (RAF/CR2/NEF/ARW/...)
+        decodes via rawpy with no camera white balance.
         """
         mime = (mime or "").lower()
 
         # JPEG path
         if "jpeg" in mime or "jpg" in mime:
-            bgr = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
+            bgr = cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_COLOR)
             if bgr is not None:
                 return cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255.0
 
-        # RAW path (RAF/CR2/NEF/ARW/...), also a fallback for odd mime types
+        # RAW path (also a fallback for odd mime types)
         if RAWPY_AVAILABLE:
             try:
-                raw = rawpy.imread(np.frombuffer(data, dtype=np.uint8))
+                raw = rawpy.imread(path)
                 # No camera white balance; keep the response as linear as possible
                 bgr = raw.postprocess(use_camera_wb=False,
                                       output_color=rawpy.ColorSpace.sRGB)
@@ -203,31 +233,78 @@ class Gphoto2Controller(CameraInterface):
             except Exception:
                 pass
 
+        # Last resort: try JPEG decode even if the mime said otherwise
+        bgr = cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_COLOR)
+        if bgr is not None:
+            return cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255.0
+
         raise ValueError(
             "Could not decode captured image (mime: {})."
             .format(mime or "unknown"))
 
-    def capture(self):
+    def _capture_once(self) -> dict:
         """
-        Capture one full-resolution still and decode it to a float32
-        grayscale frame in [0, 1].
-        :return: dict {"Success": bool, "Image": np.ndarray | None}
+        One capture attempt: fire the shutter, transfer the file to a
+        temp file (C-level write), decode it, and delete the file from
+        the camera's memory card.
+        :return: dict {"Success": bool, "Image": ndarray | None, "Error": str}
         """
-        if not self.check_camera_initialized():
-            return {"Success": False, "Image": None}
         try:
             file_path = self.camera.capture(gphoto2.GP_CAPTURE_IMAGE)
             camera_file = self.camera.file_get(
                 file_path.folder, file_path.name, gphoto2.GP_FILE_TYPE_NORMAL)
-            data, _size = camera_file.get_data_and_size()
             mime = camera_file.get_mime_type()
-            img = self._decode_image_bytes(bytes(data), mime)
-            if self._exposure_scale != 1.0:
-                img = np.clip(img * self._exposure_scale, 0.0, 1.0)
-            return {"Success": True, "Image": img}
+
+            # Save the capture straight to disk from C: in this binding
+            # get_data_and_size() materializes the whole image as a Python
+            # list of ints, which explodes memory on 100 MP files.
+            fd, tmp_path = tempfile.mkstemp(
+                prefix="kairo_gphoto2_", suffix=".bin")
+            os.close(fd)
+            try:
+                camera_file.save(tmp_path)
+                img = self._decode_image_file(tmp_path, mime)
+            finally:
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+
+            # Free the SD card: remove the capture from camera memory.
+            try:
+                self.camera.file_delete(file_path.folder, file_path.name)
+            except Exception:
+                pass
+
+            return {"Success": True, "Image": img, "Error": None}
         except Exception as ex:
-            print("gphoto2 capture failed: {}".format(ex))
+            return {"Success": False, "Image": None, "Error": str(ex)}
+
+    def capture(self):
+        """
+        Capture one full-resolution still and decode it to a float32
+        grayscale frame in [0, 1]. On failure (stale PTP session),
+        reconnects once and retries.
+        :return: dict {"Success": bool, "Image": np.ndarray | None}
+        """
+        if not self.check_camera_initialized():
             return {"Success": False, "Image": None}
+
+        result = self._capture_once()
+        if not result["Success"]:
+            # PTP sessions go stale (camera screen sleep, USB hiccup):
+            # reconnect once and retry.
+            print("gphoto2 capture failed ({}); reconnecting and "
+                  "retrying once...".format(result.get("Error")))
+            self.uninitialize_camera()
+            init = self.initialize_camera()
+            if init["Success"]:
+                result = self._capture_once()
+
+        if not result["Success"]:
+            print("gphoto2 capture failed: {}".format(result.get("Error")))
+            return {"Success": False, "Image": None}
+        return {"Success": True, "Image": result["Image"]}
 
     def capture_at_exposure(self, exposure, waveIndex):
         """Set the (emulated) exposure for the band, then capture."""
