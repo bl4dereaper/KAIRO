@@ -1262,8 +1262,10 @@ if __name__ == "__main__":
     macos_style.apply(app)
 
     # Splash screen — Kairo launch card (K mark, wordmark, progress line,
-    # copyright), held for 5 seconds. The progress line fills over the
-    # first 4.5 s so it visibly completes before the window appears.
+    # copyright). Held for 5 s of real time; the progress line fills over
+    # the first 4.5 s so it visibly completes, then rests at 100%.
+    # Progress is driven from this loop's wall clock (the same clock that
+    # decides when the card closes), so the bar is guaranteed to finish.
     splash = macos_style.KairoSplash(duration_ms=5000, fill_ms=4500)
     t0 = time.time()
     splash.start()
@@ -1273,9 +1275,11 @@ if __name__ == "__main__":
     macos_style.apply(app, window)
     remaining = 5.0 - (time.time() - t0)
     while remaining > 0:
+        splash.set_progress(min(1.0, (time.time() - t0) / 4.5))
         app.processEvents()
         time.sleep(min(0.05, remaining))
         remaining = 5.0 - (time.time() - t0)
+    splash.set_progress(1.0)
     splash.close()
     window.show()
     sys.exit(app.exec_())

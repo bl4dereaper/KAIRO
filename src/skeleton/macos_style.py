@@ -19,7 +19,7 @@ The stylesheet is applied once at the QApplication level, so all dialogs
 Written for the Project Kairo redesign (see README, Credits).
 """
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt, QRectF, QTimer
+from PyQt5.QtCore import Qt, QRectF, QTimer, QElapsedTimer
 from PyQt5.QtGui import (
     QBrush, QColor, QFont, QIcon, QLinearGradient, QPainter, QPen, QPixmap,
 )
@@ -541,7 +541,14 @@ class KairoSplash(QtWidgets.QWidget):
         # The progress line completes slightly before the card disappears,
         # so the user sees it reach 100% and rest there for a moment.
         self._fill = int(fill_ms) if fill_ms else max(1, duration_ms - 500)
-        self._elapsed = 0
+        # Wall clock for the fill. Progress is read from REAL elapsed time,
+        # never from timer-tick accumulation: macOS timers fire late (and
+        # not at all while the event loop is busy probing cameras), so an
+        # accumulated count can lag real time and the bar would still be
+        # filling when the card is closed. A wall clock guarantees the bar
+        # hits 100% at fill_ms of real time, whatever the loop is doing.
+        self._clock = QElapsedTimer()
+        self._running = False
         self._tile = build_app_pixmap(256)
         self.setWindowFlags(
             Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
@@ -556,16 +563,26 @@ class KairoSplash(QtWidgets.QWidget):
 
     def start(self):
         """Show the splash and start the progress animation."""
+        self._clock.restart()
+        self._running = True
         self._timer.start()
         self.show()
 
     def _tick(self):
-        self._elapsed += self._timer.interval()
+        # The timer only triggers repaints; progress itself is wall-time.
+        self.update()
+
+    def set_progress(self, fraction: float):
+        """Force a specific progress value (0..1); pauses the clock."""
+        self._running = False
+        self._elapsed_override = min(1.0, max(0.0, float(fraction)))
         self.update()
 
     @property
     def progress(self) -> float:
-        return min(1.0, self._elapsed / self._fill)
+        if not self._running:
+            return getattr(self, "_elapsed_override", 0.0)
+        return min(1.0, self._clock.elapsed() / self._fill)
 
     def paintEvent(self, event):
         w, h = self.width(), self.height()
