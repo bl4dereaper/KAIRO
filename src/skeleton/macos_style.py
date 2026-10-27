@@ -578,6 +578,19 @@ class KairoSplash(QtWidgets.QWidget):
         self._elapsed_override = min(1.0, max(0.0, float(fraction)))
         self.update()
 
+    def finish(self):
+        """
+        Set progress to 100% and paint it SYNCHRONOUSLY.
+
+        On macOS, update() only requests a repaint, which the display's
+        vsync may schedule after the window is closed — so the finished
+        frame would never appear. repaint() forces the paint immediately,
+        guaranteeing the user sees the bar complete before the card goes.
+        """
+        self._running = False
+        self._elapsed_override = 1.0
+        self.repaint()
+
     @property
     def progress(self) -> float:
         if not self._running:
