@@ -1261,13 +1261,12 @@ if __name__ == "__main__":
     # macOS-native look & feel (system font, Apple palette, window icon)
     macos_style.apply(app)
 
-    # Splash screen — held for a full 3 seconds so the launch screen is
-    # visible even when startup (camera probing) is fast.
-    splash_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               "skeleton", "imgs", "splash.png")
-    splash = QtWidgets.QSplashScreen(QPixmap(splash_path))
+    # Splash screen — Kairo launch card (K mark, wordmark, progress line,
+    # copyright), held for a full 3 seconds so it is visible even when
+    # startup (camera probing) is fast.
+    splash = macos_style.KairoSplash(duration_ms=3000)
     t0 = time.time()
-    splash.show()
+    splash.start()
     app.processEvents()
 
     window = Ui()
@@ -1277,6 +1276,6 @@ if __name__ == "__main__":
         app.processEvents()
         time.sleep(min(0.05, remaining))
         remaining = 3.0 - (time.time() - t0)
-    splash.hide()
+    splash.close()
     window.show()
     sys.exit(app.exec_())

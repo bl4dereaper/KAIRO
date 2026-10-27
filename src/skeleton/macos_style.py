@@ -18,9 +18,10 @@ The stylesheet is applied once at the QApplication level, so all dialogs
 (QMessageBox, QProgressDialog, QFileDialog) inherit it automatically.
 Written for the Project Kairo redesign (see README, Credits).
 """
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt, QRectF, QTimer
 from PyQt5.QtGui import (
-    QBrush, QColor, QFont, QIcon, QLinearGradient, QPainter, QPixmap,
+    QBrush, QColor, QFont, QIcon, QLinearGradient, QPainter, QPen, QPixmap,
 )
 
 # ---------------------------------------------------------------------------
@@ -523,6 +524,107 @@ def build_app_pixmap(size: int = 256) -> QPixmap:
 
 def build_app_icon() -> QIcon:
     return QIcon(build_app_pixmap())
+
+
+class KairoSplash(QtWidgets.QWidget):
+    """
+    Launch splash in the Kairo design language — a Photoshop-style launch
+    card: dark rounded panel, K mark, letterspaced KAIRO wordmark, an
+    animated progress line that fills exactly over `duration_ms`, and
+    copyright at the bottom. Frameless, centered, stays on top.
+    """
+
+    def __init__(self, duration_ms: int = 3000, parent=None):
+        super().__init__(parent)
+        self._duration = duration_ms
+        self._elapsed = 0
+        self._tile = build_app_pixmap(256)
+        self.setWindowFlags(
+            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setFixedSize(520, 560)
+        screen = QtWidgets.QApplication.primaryScreen().availableGeometry()
+        self.move(screen.center().x() - self.width() // 2,
+                  screen.center().y() - self.height() // 2)
+        self._timer = QTimer(self)
+        self._timer.setInterval(20)
+        self._timer.timeout.connect(self._tick)
+
+    def start(self):
+        """Show the splash and start the progress animation."""
+        self._timer.start()
+        self.show()
+
+    def _tick(self):
+        self._elapsed += self._timer.interval()
+        self.update()
+
+    @property
+    def progress(self) -> float:
+        return min(1.0, self._elapsed / self._duration)
+
+    def paintEvent(self, event):
+        w, h = self.width(), self.height()
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+
+        # Panel
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor(BG))
+        p.drawRoundedRect(QRectF(1, 1, w - 2, h - 2), 24, 24)
+        p.setPen(QPen(QColor(BORDER), 1))
+        p.setBrush(Qt.NoBrush)
+        p.drawRoundedRect(QRectF(1, 1, w - 2, h - 2), 24, 24)
+
+        # K mark
+        p.drawPixmap((w - 120) // 2, 88,
+                     self._tile.scaled(120, 120, Qt.KeepAspectRatio,
+                                       Qt.SmoothTransformation))
+
+        # Wordmark
+        f = QFont()
+        f.setPixelSize(34)
+        f.setBold(True)
+        f.setLetterSpacing(QFont.AbsoluteSpacing, 10)
+        p.setFont(f)
+        p.setPen(QColor(TEXT))
+        p.drawText(QRectF(0, 244, w, 50), Qt.AlignHCenter | Qt.AlignVCenter,
+                   "KAIRO")
+
+        # Micro label
+        f2 = QFont()
+        f2.setPixelSize(11)
+        f2.setLetterSpacing(QFont.AbsoluteSpacing, 4)
+        p.setFont(f2)
+        p.setPen(QColor(TEXT_3))
+        p.drawText(QRectF(0, 296, w, 18), Qt.AlignHCenter | Qt.AlignVCenter,
+                   "MULTISPECTRAL IMAGING")
+
+        # Progress line (fills 0 -> 100% over the hold time)
+        bar_w = 320
+        x0 = (w - bar_w) / 2
+        y = 384
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor(BORDER))
+        p.drawRoundedRect(QRectF(x0, y, bar_w, 4), 2, 2)
+        if self.progress > 0.01:
+            grad = QLinearGradient(x0, 0, x0 + bar_w, 0)
+            grad.setColorAt(0.0, QColor("#3ba4ff"))
+            grad.setColorAt(1.0, QColor("#0055d4"))
+            p.setBrush(QBrush(grad))
+            p.drawRoundedRect(QRectF(x0, y, bar_w * self.progress, 4), 2, 2)
+
+        # Copyright
+        fc = QFont()
+        fc.setPixelSize(11)
+        p.setFont(fc)
+        p.setPen(QColor(TEXT_3))
+        p.drawText(QRectF(0, h - 88, w, 16), Qt.AlignHCenter,
+                   "\u00a9 2026 Tom Shrieve. All rights reserved.")
+        p.setPen(QColor("#55555a"))
+        p.drawText(QRectF(0, h - 66, w, 30), Qt.AlignHCenter | Qt.AlignTop,
+                   "Based on MISHA (RIT) \u00b7 GPL v3")
+        p.end()
 
 
 def apply(app, window=None):
