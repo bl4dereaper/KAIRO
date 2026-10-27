@@ -1,10 +1,12 @@
 # Kairo
 
+**Repository:** https://github.com/bl4dereaper/Kairo
+
 **Kairo** — a low-cost, end-to-end multispectral imaging system for
 historical artifacts, by **Tom Shrieve**.
 
-Kairo is a cross-platform (macOS / Linux / Windows) application based on RIT's 
-[MISHA]([https://github.com/bl4dereaper/MISHA](https://github.com/palimpsest-pursuers/capturing))(*Multispectral Imaging
+Kairo is a cross-platform (macOS / Linux / Windows) application based on RIT's
+[MISHA](https://github.com/palimpsest-pursuers/capturing) (*Multispectral Imaging
 System for Historical Artifacts*).
 
 
@@ -35,7 +37,7 @@ exposure profile.
 brew install python@3.12
 
 # 2. Create and activate a virtual environment
-cd Project_Kairo
+cd Kairo
 python3.12 -m venv .venv
 source .venv/bin/activate
 
@@ -92,7 +94,7 @@ pip install gphoto2 rawpy
 ## Project Layout
 
 ```
-Project_Kairo/
+Kairo/
 ├── requirements.txt          # Core + optional hardware dependencies
 ├── src/
 │   ├── main.py               # Entry point: UI + camera/LED init + button wiring
@@ -109,7 +111,7 @@ Project_Kairo/
 │   │   ├── operation.py          # ABC for operations
 │   │   ├── led_test_mode.py      # LED test flashing
 │   │   ├── noise_operation.py    # dark/noise frame capture
-│   │   ├── focus_operation.py    # live focus view + sharpness
+│   │   ├── focus_operation.py    # live focus view, sharpness + peaking
 │   │   ├── light_operation.py    # per-band exposure adjustment
 │   │   ├── object_operation.py   # 16-band object capture
 │   │   ├── flats_operation.py    # flat-field capture
@@ -119,10 +121,13 @@ Project_Kairo/
 │   │   └── build_cube.py     # ENVI cube assembly, image math, saving
 │   └── skeleton/             # UI assets
 │       ├── capture.ui        # main window layout (Qt Designer)
-│       ├── macos_style.py    # macOS-native styling (palette, font, icon)
+│       ├── macos_style.py    # macOS-native styling (palette, font, icon,
+│       │                     #   launch card)
+│       ├── switch_widget.py  # macOS-style toggle switch (focus assist)
 │       ├── progress_dialog.py / message_box.py
 │       ├── rectangle_selection.py  # crop/calibration region picker
-│       └── Accessories.py    # illuminant/CMF helpers for true color
+│       ├── Accessories.py    # illuminant/CMF helpers for true color
+│       └── imgs/             # icons and image assets
 ```
 
 ### Imaging pipeline
@@ -181,7 +186,7 @@ ratios are diagnostically useful.
 ### Streamlining Roadmap (agreed order)
 1. Externalized rig config — `exposureArray` → YAML RigConfig/BandSpec
    dataclasses; validation at load; `retune_band_exposure()` + `save()` for
-   UI retuning; legacy shim for old controllers. `rig_config.py` drafted ✓
+   UI retuning; legacy shim for old controllers. (Not yet in the tree.)
 2. Exposure state pattern — `ExposureMode` enum (FIXED / TABLE / AUTO)
    unifying `reset_exposure`/`save_exposure`
 3. Frame-buffer refactor — factor `_grab_raw_frame()` /
@@ -209,7 +214,7 @@ content.
   Cecelia Ahrens, Mallory Bridge, Eric Gao, Robert Maron
 - **RIT contacts:** David Messinger and Juilee Decker (RIT)
 - **Project website:** https://chipr2022.wordpress.com/
-- **Upstream repository:** https://github.com/bl4dereaper/MISHA
+- **Upstream repository:** https://github.com/palimpsest-pursuers/capturing
 
 Additional contributions:
 
@@ -218,5 +223,6 @@ Additional contributions:
 
 ## License
 
-The MISHA upstream project's license terms apply. See the upstream
-repository for details.
+Kairo is released under the GNU General Public License v3 (GPL-3.0) — see
+the `LICENSE` file. The upstream MISHA project it is based on is credited
+above.
