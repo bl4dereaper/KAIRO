@@ -534,9 +534,13 @@ class KairoSplash(QtWidgets.QWidget):
     copyright at the bottom. Frameless, centered, stays on top.
     """
 
-    def __init__(self, duration_ms: int = 3000, parent=None):
+    def __init__(self, duration_ms: int = 5000, fill_ms: int = None,
+                 parent=None):
         super().__init__(parent)
         self._duration = duration_ms
+        # The progress line completes slightly before the card disappears,
+        # so the user sees it reach 100% and rest there for a moment.
+        self._fill = int(fill_ms) if fill_ms else max(1, duration_ms - 500)
         self._elapsed = 0
         self._tile = build_app_pixmap(256)
         self.setWindowFlags(
@@ -561,7 +565,7 @@ class KairoSplash(QtWidgets.QWidget):
 
     @property
     def progress(self) -> float:
-        return min(1.0, self._elapsed / self._duration)
+        return min(1.0, self._elapsed / self._fill)
 
     def paintEvent(self, event):
         w, h = self.width(), self.height()
