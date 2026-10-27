@@ -19,7 +19,7 @@ class CubeBuilder():
     destination_dir = ""
     filenames = None
     wavelengths = []
-    description = '{Saved by MISHA Capturing (Python) App}'
+    description = '{Saved by Kairo Capturing (Python) App}'
     samples = None
     lines = None
     bands = None

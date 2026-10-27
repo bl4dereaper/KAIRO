@@ -476,13 +476,12 @@ QSplitter::handle {{
 """
 
 
-def build_app_icon() -> QIcon:
+def build_app_pixmap(size: int = 256) -> QPixmap:
     """
-    Generate the app icon at runtime: a rounded blue tile with a white "K"
-    and a 16-color spectral strip across the bottom (a nod to the 16-band
-    multispectral capture workflow).
+    Render the Kairo mark: a rounded blue tile with a white "K" and a
+    16-color spectral strip across the bottom (a nod to the 16-band
+    multispectral capture workflow). Returns a square QPixmap.
     """
-    size = 256
     pix = QPixmap(size, size)
     pix.fill(QColor(0, 0, 0, 0))
     p = QPainter(pix)
@@ -519,7 +518,11 @@ def build_app_icon() -> QIcon:
     p.setFont(font)
     p.drawText(QRectF(8, 18, size - 16, size - 90), Qt.AlignCenter, "K")
     p.end()
-    return QIcon(pix)
+    return pix
+
+
+def build_app_icon() -> QIcon:
+    return QIcon(build_app_pixmap())
 
 
 def apply(app, window=None):

@@ -415,38 +415,35 @@
                      </spacer>
                     </item>
                     <item>
-                     <widget class="QLabel" name="RITLogo">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="minimumSize">
-                       <size>
-                        <width>84</width>
-                        <height>44</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>84</width>
-                        <height>44</height>
-                       </size>
-                      </property>
-                      <property name="sizeIncrement">
-                       <size>
-                        <width>84</width>
-                        <height>44</height>
-                       </size>
-                      </property>
-                      <property name="text">
-                       <string/>
-                      </property>
-                      <property name="pixmap">
-                       <pixmap>imgs/RIT_RGB_hor.png</pixmap>
-                      </property>
-                      <property name="scaledContents">
+                     <widget class="QLabel" name="KLogo">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="minimumSize">
+                      <size>
+                       <width>44</width>
+                       <height>44</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>44</width>
+                       <height>44</height>
+                      </size>
+                     </property>
+                     <property name="sizeIncrement">
+                      <size>
+                       <width>44</width>
+                       <height>44</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                     <property name="scaledContents">
                        <bool>true</bool>
                       </property>
                      </widget>
@@ -2125,16 +2122,16 @@ li.checked::marker { content: &quot;\2612&quot;; }
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;	c) 150% of default (bottom-left)&lt;/span&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;	d) 200% of default (bottom-right)&lt;/span&gt;&lt;/p&gt;
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Arial'; font-size:20pt; color:#c7c7cc;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;Save a new MISHA Exposure Profile:&lt;/span&gt;&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;Save a new Exposure Profile:&lt;/span&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;1) Select &amp;quot;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; text-decoration: underline; color:#c7c7cc; background-color:transparent;&quot;&gt;Advanced&lt;/span&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;&amp;quot; to set exposure levels for each of the 16 bands, one at a time.&lt;/span&gt;&lt;/p&gt;
-&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;2) After selecting exposure levels for all 16 bands, the MISHA exposure profile can be saved using the &amp;quot;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; text-decoration: underline; color:#c7c7cc; background-color:transparent;&quot;&gt;Save Profile&lt;/span&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;&amp;quot; option on bottom left of screen.&lt;/span&gt;&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;2) After selecting exposure levels for all 16 bands, the exposure profile can be saved using the &amp;quot;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; text-decoration: underline; color:#c7c7cc; background-color:transparent;&quot;&gt;Save Profile&lt;/span&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;&amp;quot; option on bottom left of screen.&lt;/span&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;3) Enter a name for this profile, such as &amp;quot;Parchment sheet&amp;quot; and select &amp;quot;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; text-decoration: underline; color:#c7c7cc; background-color:transparent;&quot;&gt;Save Profile&lt;/span&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;&amp;quot;.&lt;/span&gt;&lt;/p&gt;
-&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;4) Select desired location to save the MISHA exposure profile in the dialog box.&lt;/span&gt;&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;4) Select desired location to save the exposure profile in the dialog box.&lt;/span&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;5) You will be able to recall this profile at any time to use it again, rather than setting the camera exposures again.&lt;/span&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%; font-family:'Arial'; font-size:20pt; color:#c7c7cc;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;Load a MISHA Exposure Profile:&lt;/span&gt;&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:138%;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;Load an Exposure Profile:&lt;/span&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;1) Select &amp;quot;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; text-decoration: underline; color:#c7c7cc; background-color:transparent;&quot;&gt;Load Profile&lt;/span&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;&amp;quot;.&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;2) Select MISHA exposure profile from the dialog box.&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;2) Select an exposure profile from the dialog box.&lt;/span&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;3) Chosen exposure profile will be applied across all 16 bands.&lt;/span&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt;4) Begin Image Capture.&lt;/span&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Arial'; font-size:20pt; color:#c7c7cc; background-color:transparent;&quot;&gt; &lt;/span&gt;&lt;/p&gt;

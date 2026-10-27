@@ -31,7 +31,6 @@ from operations.operation import Operation
 from cube_creation.build_cube import CubeBuilder
 from skeleton import macos_style
 import time
-# import pyi_splash
 
 # import qdarktheme
 import numpy as np
@@ -89,6 +88,8 @@ class Ui(QtWidgets.QMainWindow):
 
         self._build_top_bar()
         self._install_focus_assist_switch()
+        # Kairo mark on the start page (replaces the old RIT credit logo)
+        self.KLogo.setPixmap(macos_style.build_app_pixmap(128))
         # Display-only text boxes (step instructions / info): read-only so
         # they render as plain text on the panel instead of input fields
         for _info in ("noiseInfo", "focasInfo", "lightInfo", "objectInfo",
@@ -1259,7 +1260,23 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     # macOS-native look & feel (system font, Apple palette, window icon)
     macos_style.apply(app)
+
+    # Splash screen — held for a full 3 seconds so the launch screen is
+    # visible even when startup (camera probing) is fast.
+    splash_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "skeleton", "imgs", "splash.png")
+    splash = QtWidgets.QSplashScreen(QPixmap(splash_path))
+    t0 = time.time()
+    splash.show()
+    app.processEvents()
+
     window = Ui()
     macos_style.apply(app, window)
+    remaining = 3.0 - (time.time() - t0)
+    while remaining > 0:
+        app.processEvents()
+        time.sleep(min(0.05, remaining))
+        remaining = 3.0 - (time.time() - t0)
+    splash.hide()
     window.show()
     sys.exit(app.exec_())
