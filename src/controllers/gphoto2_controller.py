@@ -59,6 +59,23 @@ except Exception:
     RAWPY_AVAILABLE = False
 
 
+def _yield_ui():
+    """
+    Give the GUI event loop a turn if a QApplication exists.
+
+    Called from inside blocking connect-retry sleeps so the launch splash
+    (a wall-clock-animated Qt window) can keep repainting while libgphoto2
+    is waiting for the USB camera to settle. No-op in headless contexts.
+    """
+    try:
+        from PyQt5.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app is not None:
+            app.processEvents()
+    except Exception:
+        pass
+
+
 class Gphoto2Controller(CameraInterface):
     """Camera controller for PTP/DSLR bodies via libgphoto2."""
 
@@ -129,7 +146,13 @@ class Gphoto2Controller(CameraInterface):
                     except Exception:
                         pass
                 if attempt < 2:
-                    time.sleep(1.5 * (attempt + 1))
+                    # Sleep in small slices, yielding to the GUI event loop
+                    # each slice so the launch splash keeps animating while
+                    # we wait for macOS to release the USB claim.
+                    deadline = time.time() + 1.5 * (attempt + 1)
+                    while time.time() < deadline:
+                        _yield_ui()
+                        time.sleep(0.1)
         raise ValueError("Failed to connect to {}: {}".format(name, last_err))
 
     def initialize_camera(self):

@@ -107,6 +107,7 @@ class Ui(QtWidgets.QMainWindow):
 
         init_text = self.initialize_cameras()["Init text"]
 
+        QtWidgets.QApplication.processEvents()
         try:
             self.led_control = LEDController()
             self._set_led_status("Panel connected", "on")
@@ -249,6 +250,10 @@ class Ui(QtWidgets.QMainWindow):
         """
         skipped = []
         for label, factory in CAMERA_BACKENDS:
+            # Yield to the GUI event loop between hardware probes so the
+            # launch splash (wall-clock animated) keeps moving while the
+            # blocking probes run.
+            QtWidgets.QApplication.processEvents()
             try:
                 self.camera_control = factory()
             except ValueError as e:
