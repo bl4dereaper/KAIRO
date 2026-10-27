@@ -1280,6 +1280,10 @@ if __name__ == "__main__":
         time.sleep(min(0.05, remaining))
         remaining = 5.0 - (time.time() - t0)
     splash.set_progress(1.0)
+    # Guarantee the finished frame is actually painted before the card
+    # closes — if camera init consumed the whole hold, the loop above never
+    # ran and this is the only repaint that will show the bar at 100%.
+    app.processEvents()
     splash.close()
     window.show()
     sys.exit(app.exec_())
