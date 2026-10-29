@@ -654,7 +654,7 @@ class KairoSplash(QtWidgets.QWidget):
         p.setFont(fc)
         p.setPen(QColor(TEXT_3))
         p.drawText(QRectF(0, h - 88, w, 16), Qt.AlignHCenter,
-                   "\u00a9 2026 Tom Shrieve. All rights reserved.")
+                   "\u00a9 2026 Shrieve Industries. All rights reserved.")
         p.setPen(QColor("#55555a"))
         p.drawText(QRectF(0, h - 66, w, 30), Qt.AlignHCenter | Qt.AlignTop,
                    "Based on MISHA (RIT) \u00b7 GPL v3")
@@ -669,7 +669,7 @@ def apply(app, window=None):
     """
     app.setApplicationName("Kairo")
     app.setApplicationDisplayName("Kairo")
-    app.setOrganizationName("Tom Shrieve")
+    app.setOrganizationName("Shrieve Industries")
 
     # San Francisco (macOS system font) with graceful fallbacks: pick the
     # first family actually present on the system.

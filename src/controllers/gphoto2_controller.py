@@ -34,7 +34,7 @@ Optional install:
 
 If the dependencies are missing, this module imports cleanly and the
 controller raises ValueError, so the app falls back to other cameras.
-Written by Tom Shrieve (Kairo); see README.md for full credits.
+Written by Shrieve Industries (Kairo); see README.md for full credits.
 """
 import os
 import tempfile

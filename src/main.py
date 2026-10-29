@@ -2,7 +2,7 @@
 Kairo — Main Entry Point
 
 Cross-platform (macOS/Linux/Windows) launcher for Kairo, a multispectral
-imaging system designed and built by Tom Shrieve. Initializes the UI
+imaging system designed and built by Shrieve Industries. Initializes the UI
 (loaded from skeleton/capture.ui), the camera controller, and the LED
 controller, then wires all buttons to their operations.
 
@@ -54,7 +54,7 @@ class Ui(QtWidgets.QMainWindow):
     camera_control = None
     intro_text = ('Welcome to Kairo\n\n'
                  'Kairo is a low-cost, end-to-end multispectral imaging '
-                 'system designed and built by Tom Shrieve, based on '
+                 'system designed and built by Shrieve Industries, based on '
                  'MISHA (the "Multispectral Imaging System for Historical '
                  'Artifacts"), developed by RIT\'s Imaging Science and '
                  'Museum Studies Programs for small format historical '
@@ -235,7 +235,7 @@ class Ui(QtWidgets.QMainWindow):
             ' letter-spacing:3px;">KAIRO</div>'
             '<div style="font-size:10px; color:#6e6e73; letter-spacing:2px;'
             ' margin:6px 0 22px 0;">MULTISPECTRAL CAPTURE &nbsp;&middot;&nbsp; '
-            'BY TOM SHRIEVE</div>'
+            'BY SHRIEVE INDUSTRIES</div>'
             '<div style="font-size:13px; line-height:1.65; color:#c7c7cc;">'
             + body + "</div>"
         )
@@ -351,7 +351,7 @@ class Ui(QtWidgets.QMainWindow):
             self, "About Kairo",
             '<h3>Kairo</h3>'
             '<p>A low-cost, end-to-end multispectral imaging system '
-            'designed and built by <b>Tom Shrieve</b>.</p>'
+            'designed and built by <b>Shrieve Industries</b>.</p>'
             '<p>Kairo is based on <b>MISHA</b> — the <i>Multispectral '
             'Imaging System for Historical Artifacts</i>, developed by '
             'RIT\'s Imaging Science and Museum Studies Programs to image '
@@ -369,7 +369,7 @@ class Ui(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.about(
             self, "About Kairo",
             '<h3>Kairo</h3>'
-            '<p>Designed and built by <b>Tom Shrieve</b> — a '
+            '<p>Designed and built by <b>Shrieve Industries</b> — a '
             'cross-platform (macOS / Linux / Windows) release of MISHA '
             'Image Capture.</p>'
             '<ul>'

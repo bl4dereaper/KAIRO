@@ -3,7 +3,7 @@
 **Repository:** https://github.com/bl4dereaper/Kairo
 
 **Kairo** — a low-cost, end-to-end multispectral imaging system for
-historical artifacts, by **Tom Shrieve**.
+historical artifacts, by **Shrieve Industries**.
 
 Kairo is a cross-platform (macOS / Linux / Windows) application based on RIT's
 [MISHA](https://github.com/palimpsest-pursuers/capturing) (*Multispectral Imaging
@@ -202,7 +202,7 @@ ratios are diagnostically useful.
 
 ## Acknowledgements & Credits
 
-**Kairo** was designed and built by **Tom Shrieve**.
+**Kairo** was designed and built by **Shrieve Industries**.
 
 **MISHA** — the project Kairo is based on, developed at the Rochester
 Institute of Technology (RIT) by the Imaging Science and Museum Studies
