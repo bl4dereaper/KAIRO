@@ -67,6 +67,7 @@ class Ui(QtWidgets.QMainWindow):
     noiseImg = None
     led_op = None
     _led_control_window = None
+    _camera_label = "Mock (demo)"
     noise_op = None
     focus_op = None
     light_op = None
@@ -101,6 +102,7 @@ class Ui(QtWidgets.QMainWindow):
         self._set_starting_info(self.intro_text)
         self.startingInfo.setReadOnly(True)
         self.pages.setCurrentWidget(self.startingPage)
+        self._build_camera_combo()
         self.connectButtons()
         self.setOperations()
         self.buildMenuBar()
@@ -276,12 +278,15 @@ class Ui(QtWidgets.QMainWindow):
             init_text = self.intro_text + "\nCamera auto-selected: " + selected + "\n"
             for s in skipped:
                 init_text += "  · " + s + "\n"
-            self._setCameraRadio(label)
+            self._camera_label = label
+            self._setCameraSelection(label)
             return {"Success": True, "Init text": init_text}
 
         # No hardware camera found: fall back to mock camera (demo mode)
         self.camera_control = CameraMock()
         self._set_camera_status("Mock (demo)", "warn")
+        self._camera_label = "Mock (demo)"
+        self._setCameraSelection("Mock (demo)")
         init_text = (self.intro_text +
                      '\nNo cameras found. Running in MOCK camera mode (demo only).\n')
         for s in skipped:
@@ -291,17 +296,26 @@ class Ui(QtWidgets.QMainWindow):
                       'try again.\n')
         return {"Success": True, "Init text": init_text, "Mock": True}
 
-    def _setCameraRadio(self, label):
-        """Check the Camera Options radio button matching the selected backend."""
-        radios = {
-            "Pixelink": self.pixilinkSelect,
-            "FLIR Blackfly": self.blackflySelect,
-            "DSLR (gphoto2)": self.gphotoSelect,
-            "Generic camera (OpenCV)": self.opencvSelect,
-        }
-        radio = radios.get(label)
-        if radio is not None:
-            radio.setChecked(True)
+    # Camera backends offered in the start-page dropdown (auto-selection
+    # order, plus the hardware-free mock as an explicit choice).
+    CAMERA_COMBO_OPTIONS = CAMERA_BACKENDS + [("Mock (demo)", CameraMock)]
+
+    def _build_camera_combo(self):
+        """Populate the Camera dropdown (signal wired in connectButtons,
+        so this does not trigger re-initialization)."""
+        self.cameraSelectCombo.clear()
+        for label, _factory in self.CAMERA_COMBO_OPTIONS:
+            self.cameraSelectCombo.addItem(label)
+
+    def _setCameraSelection(self, label):
+        """Point the dropdown at the active backend WITHOUT re-initializing
+        (programmatic updates block the change signal)."""
+        idx = self.cameraSelectCombo.findText(label)
+        if idx < 0:
+            return
+        self.cameraSelectCombo.blockSignals(True)
+        self.cameraSelectCombo.setCurrentIndex(idx)
+        self.cameraSelectCombo.blockSignals(False)
 
     '''Builds the macOS-style menu bar (app menu, standard Edit, Help)'''
 
@@ -486,10 +500,8 @@ class Ui(QtWidgets.QMainWindow):
         self.startButton.clicked.connect(lambda: self.startButtonClicked())
         self.LEDversion1.clicked.connect(lambda: self.LEDvSelected('Version 1'))
         self.LEDversion2.clicked.connect(lambda: self.LEDvSelected('Version 2'))
-        self.blackflySelect.clicked.connect(lambda: self.cameraSelected("Flir"))
-        self.pixilinkSelect.clicked.connect(lambda: self.cameraSelected("Pixelink"))
-        self.opencvSelect.clicked.connect(lambda: self.cameraSelected("OpenCV"))
-        self.gphotoSelect.clicked.connect(lambda: self.cameraSelected("Gphoto2"))
+        self.cameraSelectCombo.currentIndexChanged.connect(
+            self._camera_combo_changed)
 
     '''function connects start button to it's functionality'''
 
@@ -564,24 +576,33 @@ class Ui(QtWidgets.QMainWindow):
                                                         'again.\n')
             self.message_box.show_error(message="LED panel initialization failed")
 
-    def cameraSelected(self, camera='Flir'):
-        """(Re)initialize the selected camera type and update the status text."""
+    def _camera_combo_changed(self, index):
+        """The user picked a camera from the start-page dropdown:
+        (re)initialize that backend, update the status chip, and report
+        the result. On failure the last working backend stays active and
+        the dropdown is reverted to it."""
+        if index < 0 or index >= len(self.CAMERA_COMBO_OPTIONS):
+            return
+        label, factory = self.CAMERA_COMBO_OPTIONS[index]
         try:
-            if camera == 'Flir':
-                self.camera_control = BlackflyController()
-            elif camera == 'Pixelink':
-                self.camera_control = PixilinkController()
-            elif camera == 'OpenCV':
-                self.camera_control = OpenCVController()
-            elif camera == 'Gphoto2':
-                self.camera_control = Gphoto2Controller()
+            self.camera_control = factory()
+        except Exception as e:
+            # Keep the last working backend; point the dropdown back at it
+            self._setCameraSelection(self._camera_label)
             self._set_starting_info(self.intro_text +
-                                      '\n{} camera initialization successful\n'.format(camera))
-            self.message_box.show_info(message="Camera connected successfully")
-        except ValueError:
-            self._set_starting_info(self.intro_text + '\n{} camera initialization failed, ensure wired '
-                                                        'connection to computer and try again.\n'.format(camera))
+                                    '\n{} camera initialization failed ({}). '
+                                    'Ensure the device is connected and try '
+                                    'again.\n'.format(label, e))
             self.message_box.show_error(message="Camera initialization failed")
+            return
+        model = getattr(self.camera_control, "camera_model", "") or ""
+        selected = label + ((" — " + model) if model else "")
+        is_mock = isinstance(self.camera_control, CameraMock)
+        self._camera_label = label
+        self._set_camera_status(selected, "warn" if is_mock else "on")
+        self._set_starting_info(
+            self.intro_text + "\nCamera selected: " + selected + "\n")
+        self.message_box.show_info(message="Camera connected successfully")
 
     '''Connects all the buttons for the metadata page to their respective function and fills in the date'''
 

@@ -223,34 +223,16 @@
                  <cursorShape>PointingHandCursor</cursorShape>
                 </property>
                 <property name="title">
-                 <string>Camera Options</string>
+                 <string>Camera</string>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_42">
                  <item>
-                  <widget class="QRadioButton" name="blackflySelect">
-                   <property name="text">
-                    <string>Flir</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="pixilinkSelect">
-                   <property name="text">
-                    <string>Pixelink</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="opencvSelect">
-                   <property name="text">
-                    <string>Any (OpenCV / webcam)</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="gphotoSelect">
-                   <property name="text">
-                    <string>DSLR (gphoto2)</string>
+                  <widget class="QComboBox" name="cameraSelectCombo">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>30</height>
+                    </size>
                    </property>
                   </widget>
                  </item>

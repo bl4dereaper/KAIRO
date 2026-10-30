@@ -75,8 +75,8 @@ On first launch on macOS, the system may ask for **Camera** permissions
 | None (demo mode) | `controllers/camera_mock.py` | Synthetic frames | All platforms |
 
 The app auto-detects in the order above and reports which camera is active
-on the start page; you can also select one explicitly with the
-**Camera Options** radio buttons. (`baumer_controller.py` is kept as a
+on the start page; you can also pick a backend explicitly from the
+**Camera** dropdown (including the hardware-free mock demo). (`baumer_controller.py` is kept as a
 commented-out reference from the original MISHA tree.)
 
 Optional DSLR support (Project Kairo's converted-camera goal):
