@@ -66,6 +66,7 @@ class Ui(QtWidgets.QMainWindow):
     metadata = {}
     noiseImg = None
     led_op = None
+    _led_control_window = None
     noise_op = None
     focus_op = None
     light_op = None
@@ -176,6 +177,12 @@ class Ui(QtWidgets.QMainWindow):
         txt.setObjectName("statusChipText")
         lay.addWidget(dot)
         lay.addWidget(txt)
+        if title == "LED":
+            # The LED chip doubles as the shortcut to Kairo Control
+            self._led_chip_frame = chip
+            chip.installEventFilter(self)
+            chip.setToolTip("Open Kairo Control (LED panel)")
+            chip.setCursor(QtCore.Qt.PointingHandCursor)
         self.statusBarLayout.addWidget(chip)
         return (dot, txt)
 
@@ -329,6 +336,11 @@ class Ui(QtWidgets.QMainWindow):
             action.triggered.connect(
                 lambda _checked=False, c=command: self._sendEditCommand(c))
 
+        # Window menu: the LED panel control tool window
+        window_menu = menubar.addMenu("Window")
+        window_menu.addAction("Kairo Control").triggered.connect(
+            self.openLedControl)
+
         # Help menu
         help_menu = menubar.addMenu("Help")
         help_menu.addAction("MISHA Project Website").triggered.connect(
@@ -336,6 +348,28 @@ class Ui(QtWidgets.QMainWindow):
                 QUrl("https://chipr2022.wordpress.com")))
         help_menu.addAction("About Kairo").triggered.connect(
             self.showAboutKairo)
+
+    '''Opens (or re-focuses) the Kairo Control LED panel tool window'''
+
+    def openLedControl(self):
+        """Single-instance tool window; borrows the main window's LED
+        controller so the serial connection is shared with capture."""
+        from skeleton.led_control_window import KairoControlWindow
+        if self._led_control_window is None:
+            self._led_control_window = KairoControlWindow(self)
+        self._led_control_window.show()
+        self._led_control_window.raise_()
+        self._led_control_window.activateWindow()
+
+    '''Forwards LED-chip clicks in the top bar to Kairo Control'''
+
+    def eventFilter(self, obj, event):
+        led_chip_frame = getattr(self, "_led_chip_frame", None)
+        if (led_chip_frame is not None and obj is led_chip_frame
+                and event.type() == QtCore.QEvent.MouseButtonPress):
+            self.openLedControl()
+            return True
+        return super(Ui, self).eventFilter(obj, event)
 
     '''Sends a cut/copy/paste/selectAll command to the focused widget'''
 

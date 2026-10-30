@@ -91,6 +91,25 @@ sudo apt install libgphoto2-dev
 pip install gphoto2 rawpy
 ```
 
+## Kairo Control (LED Panel Tool Window)
+
+Kairo Control is the manual LED panel controller, ported from the original
+MISHA LEDS tool and integrated as a tool window in the main application
+(`skeleton/led_control_window.py`). Open it from **Window ▸ Kairo Control**
+or by clicking the **LED** status chip in the top bar.
+
+- **Board V1 / Board V2** — the two MISHA LED board revisions (18 bands
+  including 490/520 nm, and 16 bands respectively), switchable in place.
+- One click lights a band (intensity 100); clicking the active band or
+  **Turn Off** switches the panel off. Each button carries a spectral
+  color key (UV → NIR).
+- It borrows the main window's LED controller, so the serial connection
+  (CP210x @ 9600) is shared with the capture workflow — closing the window
+  never disconnects the panel, and a lost connection is reported without
+  crashing the app.
+- With no panel detected it runs in **test mode** (amber banner + chip):
+  selections update the UI but send nothing.
+
 ## Project Layout
 
 ```
@@ -124,6 +143,7 @@ Kairo/
 │       ├── macos_style.py    # macOS-native styling (palette, font, icon,
 │       │                     #   launch card)
 │       ├── switch_widget.py  # macOS-style toggle switch (focus assist)
+│       ├── led_control_window.py  # Kairo Control — LED panel tool window
 │       ├── progress_dialog.py / message_box.py
 │       ├── rectangle_selection.py  # crop/calibration region picker
 │       ├── Accessories.py    # illuminant/CMF helpers for true color
