@@ -11,17 +11,19 @@ A Capture One / Pro Display-style dark neutral theme for the PyQt5 UI:
     black image canvas (#000) with a 1px frame
   - Top bar treatment (wordmark, step indicator, device status chips)
   - Thin scrollbars, dark menus / dialogs / tooltips
-  - A runtime-generated app icon (blue tile, "K", spectral strip) so the
-    window / Dock shows a proper icon without shipping a binary asset
+  - A runtime-generated app icon (dark museum plaque, "K" with a glossy
+    translucent 16-band spectral stem) so the window / Dock shows a proper
+    icon without shipping a binary asset
 
 The stylesheet is applied once at the QApplication level, so all dialogs
 (QMessageBox, QProgressDialog, QFileDialog) inherit it automatically.
 Written for the Project Kairo redesign (see README, Credits).
 """
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt, QRectF, QTimer, QElapsedTimer
+from PyQt5.QtCore import Qt, QRectF, QPointF, QTimer, QElapsedTimer
 from PyQt5.QtGui import (
-    QBrush, QColor, QFont, QIcon, QLinearGradient, QPainter, QPen, QPixmap,
+    QBrush, QColor, QFont, QIcon, QLinearGradient, QPainter, QPainterPath,
+    QPen, QPixmap,
 )
 
 # ---------------------------------------------------------------------------
@@ -479,45 +481,87 @@ QSplitter::handle {{
 
 def build_app_pixmap(size: int = 256) -> QPixmap:
     """
-    Render the Kairo mark: a rounded blue tile with a white "K" and a
-    16-color spectral strip across the bottom (a nod to the 16-band
-    multispectral capture workflow). Returns a square QPixmap.
+    Render the Kairo mark: a dark museum-style plaque (cultural-heritage
+    look) whose "K" has a glossy translucent 16-band spectral stem —
+    UV at the top, NIR at the bottom (a nod to the 16-band multispectral
+    capture workflow). Returns a square QPixmap.
     """
     pix = QPixmap(size, size)
     pix.fill(QColor(0, 0, 0, 0))
     p = QPainter(pix)
     p.setRenderHint(QPainter.Antialiasing)
+    u = size / 256.0
 
-    # Tile
-    grad = QLinearGradient(0, 0, 0, size)
-    grad.setColorAt(0.0, QColor("#3ba4ff"))
-    grad.setColorAt(1.0, QColor("#0055d4"))
+    # ---- dark plaque tile ----
+    tile = QRectF(8 * u, 8 * u, (size - 16 * u), (size - 16 * u))
+    radius = 56 * u
+    grad = QLinearGradient(0, 8 * u, 0, size - 8 * u)
+    grad.setColorAt(0.0, QColor("#2c2c31"))
+    grad.setColorAt(1.0, QColor("#101014"))
     p.setPen(Qt.NoPen)
     p.setBrush(QBrush(grad))
-    p.drawRoundedRect(QRectF(8, 8, size - 16, size - 16), 56, 56)
+    p.drawRoundedRect(tile, radius, radius)
 
-    # 16-band spectral strip (matches the LED wavelength list, UV -> NIR)
+    # soft glass sheen across the upper half (translucent museum glass)
+    clip = QPainterPath()
+    clip.addRoundedRect(tile, radius, radius)
+    p.save()
+    p.setClipPath(clip)
+    sheen = QLinearGradient(0, 8 * u, 0, 8 * u + size * 0.46)
+    sheen.setColorAt(0.0, QColor(255, 255, 255, 28))
+    sheen.setColorAt(1.0, QColor(255, 255, 255, 0))
+    p.setPen(Qt.NoPen)
+    p.setBrush(QBrush(sheen))
+    p.drawRect(tile)
+    p.restore()
+
+    # hairline plaque frame
+    p.setPen(QPen(QColor(130, 130, 140, 90), 2 * u))
+    p.setBrush(Qt.NoBrush)
+    p.drawRoundedRect(QRectF(16 * u, 16 * u, size - 32 * u, size - 32 * u),
+                      (radius - 8 * u), (radius - 8 * u))
+
+    # ---- letterform: ONE continuous off-white stroke (stem + arms), drawn
+    # first so the spectral glass rod can overlay the vertical seamlessly
+    p.setPen(QPen(QColor("#f5f5f7"), 44 * u,
+                  cap=Qt.RoundCap, join=Qt.RoundJoin))
+    p.setBrush(Qt.NoBrush)
+    # shared vertical stroke (round caps reach y 44..212)
+    p.drawLine(QPointF(92 * u, 66 * u), QPointF(92 * u, 190 * u))
+    p.drawLine(QPointF(100 * u, 130 * u), QPointF(172 * u, 68 * u))
+    p.drawLine(QPointF(126 * u, 124 * u), QPointF(190 * u, 208 * u))
+
+    # ---- spectral glass rod over the stem: glossy translucent, the 16
+    # band colours flowing smoothly UV (top) -> NIR (the bottom) ----
     band_colors = [
         "#8e7dff", "#7a6bff", "#6b5bff", "#5a4bff",  # UV / violet
         "#3f37ff", "#2b2bff", "#007aff", "#00a2ff",  # blue
         "#00c3ff", "#00e0e0", "#00e676", "#76ff03",  # cyan / green
         "#ffd60a", "#ff9f0a", "#ff6b3b", "#ff3b30",  # yellow / orange / red
     ]
-    strip_h = 22
-    strip_y = size - 40
-    seg_w = (size - 48) / len(band_colors)
+    sx, sw = 70 * u, 44 * u            # rod x / width
+    sy, sh = 44 * u, 168 * u           # rod top / height
+    stem = QRectF(sx, sy, sw, sh)
+    rod = QLinearGradient(stem.left(), stem.top(), stem.left(), stem.bottom())
     for i, c in enumerate(band_colors):
-        p.setBrush(QColor(c))
-        x = 24 + i * seg_w
-        p.drawRect(QRectF(x, strip_y, seg_w + 0.6, strip_h))
-
-    # "K"
-    p.setPen(QColor("#ffffff"))
-    font = QFont(".AppleSystemUIFont")
-    font.setPixelSize(150)
-    font.setBold(True)
-    p.setFont(font)
-    p.drawText(QRectF(8, 18, size - 16, size - 90), Qt.AlignCenter, "K")
+        col = QColor(c)
+        col.setAlpha(185)               # translucent glass over the letter
+        rod.setColorAt(i / (len(band_colors) - 1), col)
+    p.setPen(Qt.NoPen)
+    p.setBrush(QBrush(rod))
+    p.drawRoundedRect(stem, sw / 2, sw / 2)
+    # smooth glass gloss over the upper half of the rod
+    gloss = QLinearGradient(0, stem.top(), 0, stem.top() + sh * 0.55)
+    gloss.setColorAt(0.0, QColor(255, 255, 255, 70))
+    gloss.setColorAt(1.0, QColor(255, 255, 255, 0))
+    p.setBrush(QBrush(gloss))
+    p.drawRoundedRect(stem, sw / 2, sw / 2)
+    # soft specular highlight along the left edge (polished glass rod)
+    spec = QLinearGradient(stem.left(), 0, stem.left() + sw * 0.35, 0)
+    spec.setColorAt(0.0, QColor(255, 255, 255, 60))
+    spec.setColorAt(1.0, QColor(255, 255, 255, 0))
+    p.setBrush(QBrush(spec))
+    p.drawRoundedRect(stem, sw / 2, sw / 2)
     p.end()
     return pix
 
