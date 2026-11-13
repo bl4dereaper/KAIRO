@@ -47,9 +47,16 @@ class FinishOp(Operation):
         # connect slots
         self.main.worker.finished.connect(self.finished)
         self.main.worker.progress_box.connect(self.updateProgressDialog)
+        self.main.worker.cube_saved.connect(self.on_cube_saved)
 
         # start
         self.main.thread.start()
+
+    '''Cube was saved: enable the Open in Prism handoff (main thread)'''
+
+    def on_cube_saved(self, hdr_path):
+        self.main.last_saved_cube = hdr_path
+        self.main.openInPrismButton.setEnabled(True)
 
     '''Finish Operation'''
 
@@ -76,6 +83,7 @@ class FinishWorker(QObject):
     main = None
     finished = pyqtSignal(str)
     progress_box = pyqtSignal(str)
+    cube_saved = pyqtSignal(str)
 
     def run(self):
         # Output directory was chosen on the main thread in on_start()
@@ -98,11 +106,13 @@ class FinishWorker(QObject):
 
         # build and save cube and images
         build_result = self.main.cube_builder.build(destination_dir, name)
-        if build_result == None:
-            # remember the saved cube for the "Open in Prism" button
-            self.main.last_saved_cube = os.path.join(destination_dir,
-                                                    name + ".hdr")
-            self.main.openInPrismButton.setEnabled(True)
+        # build() returns None or "Files Saved Successfully" on success,
+        # or an error message string on failure.
+        if build_result is None or build_result == "Files Saved Successfully":
+            # hand the saved cube to the "Open in Prism" button (the
+            # signal delivers on the main thread — never touch the GUI
+            # from this worker thread)
+            self.cube_saved.emit(os.path.join(destination_dir, name + ".hdr"))
             self.finished.emit('')
         else:
             self.finished.emit(build_result)
