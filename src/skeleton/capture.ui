@@ -4152,6 +4152,24 @@ li.checked::marker { content: &quot;\2612&quot;; }
                        </property>
                       </widget>
                      </item>
+                     <item>
+                      <widget class="QPushButton" name="openInPrismButton">
+                       <property name="enabled">
+                        <bool>false</bool>
+                       </property>
+                       <property name="font">
+                        <font>
+                         <pointsize>10</pointsize>
+                        </font>
+                       </property>
+                       <property name="toolTip">
+                        <string>Open the saved cube in the Prism analysis app.</string>
+                       </property>
+                       <property name="text">
+                        <string>Open in Prism</string>
+                       </property>
+                      </widget>
+                     </item>
                     </layout>
                    </widget>
                   </item>

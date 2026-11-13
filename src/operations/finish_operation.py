@@ -99,6 +99,10 @@ class FinishWorker(QObject):
         # build and save cube and images
         build_result = self.main.cube_builder.build(destination_dir, name)
         if build_result == None:
+            # remember the saved cube for the "Open in Prism" button
+            self.main.last_saved_cube = os.path.join(destination_dir,
+                                                    name + ".hdr")
+            self.main.openInPrismButton.setEnabled(True)
             self.finished.emit('')
         else:
             self.finished.emit(build_result)

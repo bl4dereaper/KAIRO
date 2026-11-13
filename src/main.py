@@ -29,6 +29,7 @@ from controllers.camera_mock import CameraMock
 from controllers.led_controller import LEDController
 from operations.operation import Operation
 from cube_creation.build_cube import CubeBuilder
+from skeleton.prism_link import open_cube_in_prism
 from skeleton import macos_style
 import time
 
@@ -1191,6 +1192,7 @@ class Ui(QtWidgets.QMainWindow):
         )
         self.finishFinishButton.clicked.connect(lambda: self.finishFinish())
         self.finishRedoButton.clicked.connect(lambda: self.finishRedo())
+        self.openInPrismButton.clicked.connect(lambda: self.openInPrism())
         self.finishComboBox.addItems(self.led_control.wavelength_list)
         self.finishComboBox.currentIndexChanged.connect(lambda: self.finishDisplay(self.finishComboBox.currentIndex()))
 
@@ -1213,7 +1215,18 @@ class Ui(QtWidgets.QMainWindow):
         self.finishRedoButton.setEnabled(False)
         self.finishComboBox.setEnabled(False)
         self.finishInfoText.setEnabled(False)
+        self.openInPrismButton.setEnabled(False)  # until this save succeeds
         self.finish_op.on_start()
+
+    '''Opens the freshly saved cube in the Prism analysis app'''
+
+    def openInPrism(self):
+        hdr = getattr(self, "last_saved_cube", None)
+        if not hdr:
+            return
+        ok, msg = open_cube_in_prism(hdr)
+        if not ok:
+            QtWidgets.QMessageBox.critical(self, "Kairo", msg)
 
     '''Redo imaging session without changing the metadata'''
 
