@@ -96,27 +96,43 @@ class FinishWorker(QObject):
         name = name.replace(' ', "_")
         name = f"{name}_DataCube"
 
-        # generate xml (once)
-        metadata_xml = dict2xml({"metadata": self.main.metadata})
-        with open(os.path.join(destination_dir, name + "-metadata.xml"), "w") as file:
-            file.write(metadata_xml)
-
-        # save exposure profile
-        self.main.light_op.saveProfile("Kairo_ExposureProfile", destination_dir)
-
-        # build and save cube and images
-        build_result = self.main.cube_builder.build(destination_dir, name)
-        # build() returns None or "Files Saved Successfully" on success,
-        # or an error message string on failure.
-        if build_result is None or build_result == "Files Saved Successfully":
-            # hand the saved cube to the "Open in Prism" button (the
-            # signal delivers on the main thread — never touch the GUI
-            # from this worker thread)
-            self.cube_saved.emit(os.path.join(destination_dir, name + ".hdr"))
-            self.finished.emit('')
+        # Every output goes inside ONE folder named after the cube, so the
+        # selected folder stays tidy: <name>/ contains the ENVI cube, the
+        # per-band Raw Images, the metadata, and the exposure profile.
+        cube_dir = os.path.join(destination_dir, name)
+        error = ''
+        if os.path.exists(cube_dir):
+            error = ("A data cube with this name already exists in this "
+                     "folder.\nPlease delete that folder or choose a "
+                     "different folder.")
         else:
-            self.finished.emit(build_result)
-        self.main.finishPageTitle.setText("Cube saved in selected folder")
+            os.makedirs(cube_dir)
+
+            # generate xml (once)
+            metadata_xml = dict2xml({"metadata": self.main.metadata})
+            with open(os.path.join(cube_dir, name + "-metadata.xml"), "w") as file:
+                file.write(metadata_xml)
+
+            # save exposure profile
+            self.main.light_op.saveProfile("Kairo_ExposureProfile", cube_dir)
+
+            # build and save cube and images
+            build_result = self.main.cube_builder.build(cube_dir, name)
+            # build() returns None or "Files Saved Successfully" on success,
+            # or an error message string on failure.
+            if build_result is None or build_result == "Files Saved Successfully":
+                # hand the saved cube to the "Open in Prism" button (the
+                # signal delivers on the main thread — never touch the GUI
+                # from this worker thread)
+                self.cube_saved.emit(os.path.join(cube_dir, name + ".hdr"))
+            else:
+                error = build_result
+        if error:
+            self.finished.emit(error)
+            self.main.finishPageTitle.setText("Cube could not be saved")
+        else:
+            self.finished.emit('')
+            self.main.finishPageTitle.setText("Cube saved in selected folder")
         self.progress_box.emit("close")
         self.main.finishFinishButton.setEnabled(True)
         self.main.finishRedoButton.setEnabled(True)

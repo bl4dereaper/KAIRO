@@ -286,8 +286,8 @@ class CubeBuilder():
             rawPath = os.path.join(destination, name + " Raw Images")
             os.makedirs(rawPath)
         except Exception as ex:
-            return ("Image cube with this name already exists in this folder.\n"
-                    + "Please delete cube with the same name or choose a different folder.\n")
+            return ("Could not save the image cube to this folder.\n"
+                    + f"Details: {ex}\n")
 
         # save all raw object images as individual tiffs in its own subdirectory
         w = 0
